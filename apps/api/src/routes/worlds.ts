@@ -16,7 +16,10 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
     const uid = req.user!.uid;
 
     const worlds = await Worlds.find({
-      $or: [{ ownerUid: uid }, { "members.uid": uid }],
+      $or: [
+        { ownerUid: uid },
+        { "members.uid": uid }, // for shared worlds
+      ],
     })
       .sort({ lastActivityAt: -1, createdAt: -1 })
       .toArray();
@@ -26,11 +29,15 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
       name: w.name,
       emoji: w.emoji,
       ownerUid: w.ownerUid,
-      members: w.members,
-      stats: w.stats,
+      members: w.members ?? [],
+      stats: {
+        pageCount: w.stats?.pageCount ?? 0,
+        favoriteCount: w.stats?.favoriteCount ?? 0,
+        collaboratorCount: w.stats?.collaboratorCount ?? w.members?.length ?? 1,
+      },
       createdAt: w.createdAt,
       updatedAt: w.updatedAt,
-      lastActivityAt: w.lastActivityAt,
+      lastActivityAt: w.lastActivityAt ?? w.createdAt,
     }));
   });
 
@@ -186,43 +193,5 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
     });
 
     return { ok: true };
-  });
-
-  // GET /worlds/:worldId/activity - recent activity for dashboard
-  app.get<{
-    Params: { worldId: string };
-  }>("/worlds/:worldId/activity", async (req, reply) => {
-    const uid = req.user!.uid;
-    const { worldId } = req.params;
-
-    let worldObjectId: ObjectId;
-    try {
-      worldObjectId = new ObjectId(worldId);
-    } catch {
-      return reply.code(400).send({ error: "invalid worldId" });
-    }
-
-    const world = await Worlds.findOne({
-      _id: worldObjectId,
-      $or: [{ ownerUid: uid }, { "members.uid": uid }],
-    });
-
-    if (!world) return reply.code(404).send({ error: "world not found" });
-
-    const { WorldActivity } = getCollections();
-    const events = await WorldActivity.find({ worldId: worldObjectId })
-      .sort({ createdAt: -1 })
-      .limit(40)
-      .toArray();
-
-    return events.map((e) => ({
-      _id: e._id.toString(),
-      worldId: e.worldId.toString(),
-      pageId: e.pageId?.toString(),
-      actorUid: e.actorUid,
-      type: e.type,
-      meta: e.meta,
-      createdAt: e.createdAt,
-    }));
   });
 };

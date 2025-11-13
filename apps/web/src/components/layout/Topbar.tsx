@@ -6,10 +6,19 @@ import { useAppStatus } from "../../store/appStatus";
 import { TopbarWorldMenu } from "./TopbarWorldMenu";
 
 export function Topbar() {
-  const { user, clear } = useAuth();
+  const { user, logout } = useAuth();
   const { worlds, currentWorldId, renameWorld } = useWorlds();
   const { isSaving, lastSavedAt } = useAppStatus();
   const currentWorld = worlds.find((w) => w._id === currentWorldId) ?? null;
+  console.log(
+    "[TOPBAR]",
+    "\n  worlds:",
+    worlds,
+    "\n  currentWorldId:",
+    currentWorldId,
+    "\n  currentWorld:",
+    currentWorld
+  );
 
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(currentWorld?.name ?? "");
@@ -62,7 +71,7 @@ export function Topbar() {
         </div>
       </div>
 
-      {/* Center: world title + hamburger (in a relative container) */}
+      {/* Center: world title + hamburger */}
       <div className="flex-1 flex items-center justify-center pointer-events-none">
         <div className="relative flex items-center gap-3 pointer-events-auto">
           {/* World title */}
@@ -112,7 +121,7 @@ export function Topbar() {
             <span className="w-4 h-[1.5px] bg-slate-200 rounded-full" />
           </button>
 
-          {/* Worlds menu, anchored right below the hamburger */}
+          {/* Worlds menu */}
           {menuOpen && (
             <div
               className="absolute top-11 right-0"
@@ -143,7 +152,7 @@ export function Topbar() {
 
         {user && (
           <button
-            onClick={clear}
+            onClick={logout}
             className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-200"
           >
             Sign out

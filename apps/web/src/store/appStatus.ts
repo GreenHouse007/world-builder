@@ -5,11 +5,16 @@ interface AppStatusState {
   lastSavedAt: string | null;
   startSaving: () => void;
   finishSaving: () => void;
+  setSaving: (v: boolean) => void;
+  setSavedNow: () => void;
 }
 
 export const useAppStatus = create<AppStatusState>((set) => ({
   isSaving: false,
   lastSavedAt: null,
+  setSaving: (v) => set({ isSaving: v }),
+  setSavedNow: () =>
+    set({ lastSavedAt: new Date().toISOString(), isSaving: false }),
   startSaving: () => set({ isSaving: true }),
   finishSaving: () =>
     set({

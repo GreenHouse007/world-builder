@@ -13,13 +13,22 @@ import { activityRoutes } from "./routes/activity";
 async function buildServer() {
   const app = Fastify({ logger: true });
 
-  await app.register(cors, { origin: true });
+  // ✅ CORS must be registered before routes & hooks
+  await app.register(cors, {
+    // In dev, you can keep this permissive. For prod, replace with an array like:
+    // origin: ["http://localhost:5173", "https://yourdomain.com"]
+    origin: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ✅ allow PATCH
+    allowedHeaders: ["Content-Type", "Authorization"], // ✅ allow bearer token
+    credentials: true,
+  });
 
   initFirebase();
   await initDb();
 
-  // auth hook
+  // ✅ Auth hook: bypass for public routes AND for preflight (OPTIONS)
   app.addHook("preHandler", async (req, reply) => {
+    if (req.method === "OPTIONS") return; // let CORS handle preflight
     if (req.routeOptions.config?.public) return;
 
     const authHeader = req.headers.authorization;

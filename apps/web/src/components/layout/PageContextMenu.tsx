@@ -1,48 +1,66 @@
-import type { FC } from "react";
+import { useEffect, useRef } from "react";
 
-interface PageContextMenuProps {
+interface Props {
   x: number;
   y: number;
+  onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
-export const PageContextMenu: FC<PageContextMenuProps> = ({
+export function PageContextMenu({
   x,
   y,
+  onRename,
   onDuplicate,
   onDelete,
   onClose,
-}) => {
+}: Props) {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!ref.current || ref.current.contains(e.target as Node)) return;
+      onClose();
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [onClose]);
+
   return (
     <div
-      className="fixed z-50"
+      ref={ref}
       style={{ top: y, left: x }}
-      onClick={(e) => e.stopPropagation()}
+      className="fixed z-50 min-w-40 rounded-xl border border-white/10 bg-[#0a0f1a] shadow-2xl p-1"
     >
-      <div className="w-40 rounded-2xl bg-[#050814] border border-white/10 shadow-2xl py-1 text-[10px] text-slate-200">
-        <button
-          className="w-full px-3 py-1.5 text-left hover:bg-white/5"
-          onClick={() => {
-            onDuplicate();
-            onClose();
-          }}
-        >
-          Duplicate page
-        </button>
-        <button
-          className="w-full px-3 py-1.5 text-left text-red-300 hover:bg-red-500/10"
-          onClick={() => {
-            if (window.confirm("Delete this page and its children?")) {
-              onDelete();
-              onClose();
-            }
-          }}
-        >
-          Delete page
-        </button>
-      </div>
+      <button
+        className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+        onClick={() => {
+          onRename();
+          onClose();
+        }}
+      >
+        Rename
+      </button>
+      <button
+        className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+        onClick={() => {
+          onDuplicate();
+          onClose();
+        }}
+      >
+        Duplicate
+      </button>
+      <button
+        className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-500/10 text-sm text-red-300"
+        onClick={() => {
+          onDelete();
+          onClose();
+        }}
+      >
+        Delete
+      </button>
     </div>
   );
-};
+}

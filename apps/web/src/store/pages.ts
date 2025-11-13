@@ -1,197 +1,235 @@
 import { create } from "zustand";
 import { api } from "../services/http";
 
-export interface Page {
+export interface PageNode {
   _id: string;
   worldId: string;
-  parentId: string | null;
   title: string;
+  parentId: string | null;
+  position: number; // server uses "position"
   emoji?: string;
-  position: number;
-  createdAt?: string;
-  updatedAt?: string;
+  isCollapsed?: boolean; // UI-only
+  isFavorite?: boolean; // UI-only
+  // computed at fetch time
+  children?: PageNode[];
 }
 
 interface PagesState {
-  byWorld: Record<string, Page[]>;
+  pages: PageNode[]; // flat
+  tree: PageNode[]; // nested
   currentPageId: string | null;
-  loadingWorldId: string | null;
+  loading: boolean;
+  error: string | null;
 
-  setCurrentPage: (pageId: string | null) => void;
   fetchPages: (worldId: string) => Promise<void>;
   createPage: (
     worldId: string,
-    title?: string,
-    emoji?: string,
     parentId?: string | null
-  ) => Promise<Page | null>;
-  renamePage: (pageId: string, title: string) => Promise<void>;
-  deletePage: (pageId: string) => Promise<void>;
-  duplicatePage: (pageId: string) => Promise<void>;
-  movePage: (pageId: string, parentId: string | null) => Promise<void>;
+  ) => Promise<PageNode | null>;
+  renamePage: (id: string, title: string) => Promise<void>;
+  deletePage: (id: string) => Promise<void>;
+  duplicatePage: (id: string) => Promise<PageNode | null>;
+  movePage: (id: string, newParentId: string | null) => Promise<void>;
+  toggleCollapse: (id: string) => Promise<void>;
+  toggleFavorite: (id: string) => Promise<void>;
+  setCurrentPage: (id: string | null) => void;
+  applyFilter: (q: string) => void; // client-side filter
+  filteredIds: Set<string>; // ids visible for search
+}
+
+function toTree(nodes: PageNode[]): PageNode[] {
+  const map = new Map<string, PageNode>();
+  nodes.forEach((n) => map.set(n._id, { ...n, children: [] }));
+  const roots: PageNode[] = [];
+  nodes.forEach((n) => {
+    const m = map.get(n._id)!;
+    if (n.parentId) {
+      const p = map.get(n.parentId);
+      if (p) p.children!.push(m);
+    } else {
+      roots.push(m);
+    }
+  });
+  const sortRec = (arr: PageNode[]) => {
+    arr.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    arr.forEach((c) => sortRec(c.children!));
+  };
+  sortRec(roots);
+  return roots;
 }
 
 export const usePages = create<PagesState>((set, get) => ({
-  byWorld: {},
+  pages: [],
+  tree: [],
   currentPageId: null,
-  loadingWorldId: null,
+  loading: false,
+  error: null,
+  filteredIds: new Set<string>(),
 
-  setCurrentPage: (pageId) => set({ currentPageId: pageId }),
-
-  fetchPages: async (worldId) => {
-    const { loadingWorldId } = get();
-    if (loadingWorldId === worldId) return;
-
-    set({ loadingWorldId: worldId });
+  async fetchPages(worldId) {
+    set({ loading: true, error: null });
     try {
-      const pages = await api<Page[]>(`/worlds/${worldId}/pages`);
-      set((state) => ({
-        byWorld: { ...state.byWorld, [worldId]: pages },
-        loadingWorldId: null,
+      const data = await api<PageNode[]>(`/worlds/${worldId}/pages`);
+      const normalized = data.map((p) => ({
+        ...p,
+        position:
+          typeof p.position === "number" ? p.position : Number(p.position) || 0,
       }));
-    } catch (err) {
-      console.error("Failed to fetch pages", err);
-      set({ loadingWorldId: null });
+      const tree = toTree(normalized);
+      set({ pages: normalized, tree, loading: false, filteredIds: new Set() });
+    } catch (e) {
+      console.error("[PAGES] fetch error", e);
+      set({ error: "Failed to load pages", loading: false });
     }
   },
 
-  createPage: async (
-    worldId,
-    title = "New Page",
-    emoji = "📄",
-    parentId: string | null = null
-  ) => {
+  async createPage(worldId, parentId = null) {
     try {
-      const page = await api<Page>("/pages", {
+      const newPage = await api<PageNode>("/pages", {
         method: "POST",
-        body: JSON.stringify({ worldId, title, emoji, parentId }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ worldId, parentId, title: "New Page" }),
       });
-
-      set((state) => ({
-        byWorld: {
-          ...state.byWorld,
-          [worldId]: [...(state.byWorld[worldId] || []), page],
-        },
-        currentPageId: page._id,
-      }));
-
-      return page;
-    } catch (err) {
-      console.error("Failed to create page", err);
+      const normalized = {
+        ...newPage,
+        position:
+          typeof newPage.position === "number"
+            ? newPage.position
+            : Number(newPage.position) || 0,
+      };
+      set((s) => {
+        const pages = [...s.pages, normalized];
+        return { pages, tree: toTree(pages) };
+      });
+      return normalized;
+    } catch (e) {
+      console.error("[PAGES] create error", e);
       return null;
     }
   },
 
-  renamePage: async (pageId, title) => {
-    const trimmed = title.trim() || "New Page";
-
+  async renamePage(id, title) {
     try {
-      await api<{ ok?: boolean }>(`/pages/${pageId}`, {
+      const trimmed = title.trim();
+      if (!trimmed) return;
+      await api(`/pages/${id}`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
       });
-    } catch (err) {
-      console.error("Failed to rename page", err);
-    }
-
-    set((state) => {
-      const byWorld: Record<string, Page[]> = {};
-      for (const [worldId, pages] of Object.entries(state.byWorld)) {
-        byWorld[worldId] = pages.map((p) =>
-          p._id === pageId ? { ...p, title: trimmed } : p
+      set((s) => {
+        const pages = s.pages.map((p) =>
+          p._id === id ? { ...p, title: trimmed } : p
         );
-      }
-      return { byWorld };
-    });
-  },
-
-  deletePage: async (pageId) => {
-    try {
-      await api<{ ok: boolean }>(`/pages/${pageId}`, {
-        method: "DELETE",
+        return { pages, tree: toTree(pages) };
       });
-    } catch (err) {
-      console.error("Failed to delete page", err);
+    } catch (e) {
+      console.error("[PAGES] rename error", e);
     }
-
-    // Remove the page and its descendants from local state
-    set((state) => {
-      const byWorld: Record<string, Page[]> = {};
-      let { currentPageId } = state;
-
-      for (const [worldId, pages] of Object.entries(state.byWorld)) {
-        const idsToDelete = new Set<string>();
-
-        // build tree index
-        const childrenMap: Record<string, string[]> = {};
-        for (const p of pages) {
-          if (p.parentId) {
-            if (!childrenMap[p.parentId]) childrenMap[p.parentId] = [];
-            childrenMap[p.parentId].push(p._id);
-          }
-        }
-
-        const stack: string[] = [pageId];
-        while (stack.length) {
-          const id = stack.pop() as string;
-          if (idsToDelete.has(id)) continue;
-          idsToDelete.add(id);
-          const kids = childrenMap[id];
-          if (kids) stack.push(...kids);
-        }
-
-        const filtered = pages.filter((p) => !idsToDelete.has(p._id));
-        byWorld[worldId] = filtered;
-
-        if (idsToDelete.has(currentPageId ?? "")) {
-          currentPageId = null;
-        }
-      }
-
-      return { byWorld, currentPageId };
-    });
   },
 
-  duplicatePage: async (pageId) => {
+  async deletePage(id) {
     try {
-      const copy = await api<Page>(`/pages/${pageId}/duplicate`, {
-        method: "POST",
-      });
-
-      set((state) => {
-        const pages = state.byWorld[copy.worldId] || [];
-        return {
-          byWorld: {
-            ...state.byWorld,
-            [copy.worldId]: [...pages, copy],
-          },
-          currentPageId: copy._id,
+      await api(`/pages/${id}`, { method: "DELETE" });
+      set((s) => {
+        const omit = new Set<string>([id]);
+        const walk = (pid: string) => {
+          s.pages.forEach((p) => {
+            if (p.parentId === pid) {
+              omit.add(p._id);
+              walk(p._id);
+            }
+          });
         };
+        walk(id);
+        const pages = s.pages.filter((p) => !omit.has(p._id));
+        return { pages, tree: toTree(pages) };
       });
-    } catch (err) {
-      console.error("Failed to duplicate page", err);
+    } catch (e) {
+      console.error("[PAGES] delete error", e);
     }
   },
 
-  movePage: async (pageId, parentId) => {
+  async duplicatePage(id) {
     try {
-      await api<{ ok: boolean }>(`/pages/${pageId}/move`, {
-        method: "PATCH",
-        body: JSON.stringify({ parentId }),
+      const clone = await api<PageNode>(`/pages/${id}/duplicate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
-    } catch (err) {
-      console.error("Failed to move page", err);
+      const normalized = {
+        ...clone,
+        position:
+          typeof clone.position === "number"
+            ? clone.position
+            : Number(clone.position) || 0,
+      };
+      set((s) => {
+        const pages = [...s.pages, normalized];
+        return { pages, tree: toTree(pages) };
+      });
+      return normalized;
+    } catch (e) {
+      console.error("[PAGES] duplicate error", e);
+      return null;
     }
+  },
 
-    // Optimistic local update
-    set((state) => {
-      const byWorld: Record<string, Page[]> = {};
-      for (const [worldId, pages] of Object.entries(state.byWorld)) {
-        byWorld[worldId] = pages.map((p) =>
-          p._id === pageId ? { ...p, parentId } : p
+  async movePage(id, newParentId) {
+    try {
+      await api(`/pages/${id}/move`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parentId: newParentId }),
+      });
+
+      // Update local state
+      set((s) => {
+        const siblingPositions = s.pages
+          .filter((p) => p.parentId === newParentId)
+          .map((p) => p.position ?? 0);
+        const nextPos =
+          (siblingPositions.length ? Math.max(...siblingPositions) : 0) + 1;
+
+        const pages = s.pages.map((p) =>
+          p._id === id ? { ...p, parentId: newParentId, position: nextPos } : p
         );
-      }
-      return { byWorld };
+        return { pages, tree: toTree(pages) };
+      });
+    } catch (e) {
+      console.error("[PAGES] move error", e);
+    }
+  },
+
+  async toggleCollapse(id) {
+    set((s) => {
+      const pages = s.pages.map((p) =>
+        p._id === id ? { ...p, isCollapsed: !p.isCollapsed } : p
+      );
+      return { pages, tree: toTree(pages) };
     });
+  },
+
+  async toggleFavorite(id) {
+    set((s) => {
+      const pages = s.pages.map((p) =>
+        p._id === id ? { ...p, isFavorite: !p.isFavorite } : p
+      );
+      return { pages, tree: toTree(pages) };
+    });
+  },
+
+  setCurrentPage(id) {
+    set({ currentPageId: id });
+  },
+
+  applyFilter(q) {
+    const term = q.trim().toLowerCase();
+    if (!term) return set({ filteredIds: new Set() });
+    const ids = new Set<string>();
+    const { pages } = get();
+    for (const p of pages) {
+      if (p.title.toLowerCase().includes(term)) ids.add(p._id);
+    }
+    set({ filteredIds: ids });
   },
 }));

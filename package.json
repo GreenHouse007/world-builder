@@ -8,7 +8,7 @@
     "api": "pnpm --filter @enfield/api dev"
   },
   "devDependencies": {
-    "turbo": "^2.6.0"
+    "turbo": "^2.6.1"
   },
   "packageManager": "pnpm@10.20.0"
 }

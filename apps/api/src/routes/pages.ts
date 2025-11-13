@@ -149,12 +149,11 @@ export const pagesRoutes: FastifyPluginAsync = async (app) => {
     await Worlds.updateOne(
       { _id: world._id },
       {
+        $inc: { "stats.pageCount": 1 },
         $set: {
-          "stats.pageCount": (world.stats?.pageCount ?? 0) + 1,
           lastActivityAt: now,
           updatedAt: now,
         },
-        $inc: { "stats.pageCount": 1 },
       }
     );
 

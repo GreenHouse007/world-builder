@@ -1,12 +1,13 @@
 import { usePages } from "../../store/pages";
-import { PageEditor } from "../../components/editor/PageEditor";
+//import { PageEditor } from "../../components/editor/PageEditor";
+import PageView from "../../components/layout/PageView";
 
 function HomePage() {
   const { currentPageId } = usePages();
 
   // If a page is selected, show the editor
   if (currentPageId) {
-    return <PageEditor pageId={currentPageId} />;
+    return <PageView />;
   }
 
   // Otherwise show the dashboard

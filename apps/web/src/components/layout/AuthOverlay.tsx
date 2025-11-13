@@ -5,71 +5,51 @@ import { auth, googleProvider } from "../../lib/firebase";
 import { useAuth } from "../../store/auth";
 
 export function AuthOverlay() {
-  const { user, setUser } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("adventurebyalex@gmail.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Already signed in -> no overlay
-  if (user) return null;
+  // If auth is still bootstrapping, or user is signed in, don't show overlay
+  if (authLoading || user) return null;
 
   const handleEmailSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setSubmitting(true);
 
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const token = await cred.user.getIdToken();
-
-      setUser(
-        {
-          uid: cred.user.uid,
-          name: cred.user.displayName,
-          email: cred.user.email,
-          photoURL: cred.user.photoURL,
-        },
-        token
-      );
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged will update useAuth & hide overlay
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unable to sign in.";
       setError(message);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const handleGoogle = async () => {
     setError(null);
-    setLoading(true);
+    setSubmitting(true);
 
     try {
-      const cred = await signInWithPopup(auth, googleProvider);
-      const token = await cred.user.getIdToken();
-
-      setUser(
-        {
-          uid: cred.user.uid,
-          name: cred.user.displayName,
-          email: cred.user.email,
-          photoURL: cred.user.photoURL,
-        },
-        token
-      );
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged will handle store
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Google sign-in failed.";
       setError(message);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02030a]">
       <div className="w-[92%] max-w-6xl bg-gradient-to-br from-[#050716] to-[#040816] rounded-3xl p-10 flex gap-10 shadow-2xl border border-white/5">
-        {/* Left: hero / marketing */}
+        {/* Left: marketing */}
         <div className="flex-1 space-y-6 text-slate-100">
           <div className="text-xs tracking-[0.2em] text-slate-400 uppercase">
             Enfield
@@ -81,10 +61,9 @@ export function AuthOverlay() {
             </span>
           </h1>
           <p className="text-slate-400 text-sm max-w-xl">
-            Sign in to unlock nested worlds, live autosave, PDF exports, and a
-            focused writing space for your campaigns and epics.
+            Sign in to unlock nested worlds, autosave, exports, and a focused
+            writing space for your campaigns and epics.
           </p>
-          {/* you can drop your feature cards back here */}
         </div>
 
         {/* Right: auth card */}
@@ -124,18 +103,18 @@ export function AuthOverlay() {
               </div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="w-full mt-2 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-sm font-medium text-white transition"
               >
-                {loading ? "Signing in..." : "Sign in"}
+                {submitting ? "Signing in..." : "Sign in"}
               </button>
             </form>
 
             <button
               type="button"
               onClick={handleGoogle}
-              disabled={loading}
-              className="w-full mt-3 py-2 rounded-xl bg-white/5 hover:bg白/10 text-xs text-slate-100 flex items-center justify-center gap-2 disabled:opacity-50"
+              disabled={submitting}
+              className="w-full mt-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-slate-100 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <span>G</span>
               <span>Sign in with Google</span>
