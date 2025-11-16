@@ -1,15 +1,18 @@
 // apps/web/src/components/layout/Topbar.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../store/auth";
 import { useWorlds } from "../../store/worlds";
 import { useAppStatus } from "../../store/appStatus";
 import { TopbarWorldMenu } from "./TopbarWorldMenu";
+import { ExportModal } from "../export/ExportModal";
 
 export function Topbar() {
   const { user, logout } = useAuth();
   const { worlds, currentWorldId, renameWorld } = useWorlds();
   const { isSaving, lastSavedAt } = useAppStatus();
+  const [showExport, setShowExport] = useState(false);
   const currentWorld = worlds.find((w) => w._id === currentWorldId) ?? null;
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   console.log(
     "[TOPBAR]",
     "\n  worlds:",
@@ -109,6 +112,7 @@ export function Topbar() {
 
           {/* Worlds hamburger */}
           <button
+            ref={menuButtonRef}
             type="button"
             onClick={(e) => {
               e.stopPropagation();
@@ -123,12 +127,10 @@ export function Topbar() {
 
           {/* Worlds menu */}
           {menuOpen && (
-            <div
-              className="absolute top-11 right-0"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <TopbarWorldMenu onClose={() => setMenuOpen(false)} />
-            </div>
+            <TopbarWorldMenu
+              onClose={() => setMenuOpen(false)}
+              buttonRef={menuButtonRef}
+            />
           )}
         </div>
       </div>
@@ -149,6 +151,14 @@ export function Topbar() {
             ? `Saved ${lastSavedAt}`
             : "All changes saved"}
         </div>
+
+        <button
+          onClick={() => setShowExport(true)}
+          className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-200"
+        >
+          Export
+        </button>
+        {showExport && <ExportModal onClose={() => setShowExport(false)} />}
 
         {user && (
           <button

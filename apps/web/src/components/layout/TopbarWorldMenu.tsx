@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useWorlds } from "../../store/worlds";
 
 interface Props {
   onClose: () => void;
+  buttonRef?: React.RefObject<HTMLElement>;
 }
 
-export function TopbarWorldMenu({ onClose }: Props) {
+export function TopbarWorldMenu({ onClose, buttonRef }: Props) {
   const {
     worlds,
     currentWorldId,
@@ -16,9 +18,29 @@ export function TopbarWorldMenu({ onClose }: Props) {
   } = useWorlds();
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState("New World");
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [isPositioned, setIsPositioned] = useState(false);
 
-  return (
-    <div className="w-80 rounded-2xl border border-white/10 bg-[#0a0f1a] shadow-2xl p-2">
+  useEffect(() => {
+    if (buttonRef?.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 8,
+        left: rect.right - 320, // 320px is menu width (w-80)
+      });
+      setIsPositioned(true);
+    }
+  }, [buttonRef]);
+
+  return createPortal(
+    <div
+      className="fixed w-80 rounded-2xl border border-white/10 bg-[#0a0f1a] shadow-2xl p-2 z-[100] transition-opacity duration-150"
+      style={{
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        opacity: isPositioned ? 1 : 0,
+      }}
+    >
       <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500">
         Worlds
       </div>
@@ -54,8 +76,19 @@ export function TopbarWorldMenu({ onClose }: Props) {
                 }}
                 onShare={() => alert("Sharing UI TBD")}
                 onDelete={async () => {
-                  if (confirm("Delete this world? This removes all pages."))
-                    await deleteWorld(w._id);
+                  const confirmDelete = confirm(`Delete "${w.name}"? This removes all pages and cannot be undone.`);
+                  console.log("[DELETE] Confirm result:", confirmDelete);
+                  if (confirmDelete) {
+                    console.log("[DELETE] Attempting to delete world:", w._id);
+                    try {
+                      await deleteWorld(w._id);
+                      console.log("[DELETE] World deleted successfully");
+                      onClose(); // Close the main menu after deletion
+                    } catch (err) {
+                      console.error("[DELETE] Failed to delete world:", err);
+                      alert("Failed to delete world. Please try again.");
+                    }
+                  }
                 }}
               />
             </div>
@@ -105,7 +138,8 @@ export function TopbarWorldMenu({ onClose }: Props) {
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -121,17 +155,37 @@ function WorldInlineMenu({
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (open && buttonRef?.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 4,
+        left: rect.right - 176, // 176px is menu width (w-44 = 11rem = 176px)
+      });
+    }
+  }, [open]);
+
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-slate-200"
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
         title="More"
       >
         ⋯
       </button>
-      {open && (
-        <div className="absolute right-0 top-8 w-44 rounded-xl border border-white/10 bg-[#0a0f1a] p-1 shadow-xl z-50">
+      {open && createPortal(
+        <div
+          className="fixed w-44 rounded-xl border border-white/10 bg-[#0a0f1a] p-1 shadow-xl z-[110]"
+          style={{ top: `${position.top}px`, left: `${position.left}px` }}
+        >
           <button
             className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
             onClick={() => {
@@ -168,7 +222,8 @@ function WorldInlineMenu({
           >
             Delete
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

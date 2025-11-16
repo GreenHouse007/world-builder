@@ -9,6 +9,7 @@ import { worldsRoutes } from "./routes/worlds";
 import { pagesRoutes } from "./routes/pages";
 import { favoritesRoutes } from "./routes/favorites";
 import { activityRoutes } from "./routes/activity";
+import { exportRoutes } from "./routes/export";
 
 async function buildServer() {
   const app = Fastify({ logger: true });
@@ -59,6 +60,7 @@ async function buildServer() {
   await app.register(pagesRoutes);
   await app.register(favoritesRoutes);
   await app.register(activityRoutes);
+  await app.register(exportRoutes);
 
   return app;
 }

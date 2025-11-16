@@ -14,3 +14,11 @@ body {
 #root {
   min-height: 100vh;
 }
+
+.tiptap-block-handle {
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 6px;
+  background: transparent;
+}

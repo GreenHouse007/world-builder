@@ -1,5 +1,5 @@
 import { type Editor } from "@tiptap/react";
-import { BubbleMenu } from "@tiptap/react/menus";
+import BubbleMenu from "@tiptap/extension-bubble-menu";
 
 export function EditorBubble({ editor }: { editor: Editor }) {
   return (

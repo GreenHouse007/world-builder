@@ -35,21 +35,25 @@ export function SidebarPageItem({
         className="group flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5"
         style={{ paddingLeft: 8 + depth * 14 }}
       >
-        {/* Collapse caret */}
+        {/* Collapse caret or dot */}
         <button
-          className={`w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-200 ${
-            hasChildren ? "" : "opacity-30 cursor-default"
+          className={`w-5 h-5 flex items-center justify-center text-slate-400 ${
+            hasChildren ? "hover:text-slate-200" : "cursor-default"
           }`}
           onClick={() => hasChildren && pages.toggleCollapse?.(node._id)}
-          title={node.isCollapsed ? "Expand" : "Collapse"}
+          title={hasChildren ? (node.isCollapsed ? "Expand" : "Collapse") : ""}
         >
-          <span
-            className={`inline-block transition-transform ${
-              node.isCollapsed ? "" : "rotate-90"
-            }`}
-          >
-            ▶
-          </span>
+          {hasChildren ? (
+            <span
+              className={`inline-block transition-transform text-[10px] ${
+                node.isCollapsed ? "" : "rotate-90"
+              }`}
+            >
+              ▶
+            </span>
+          ) : (
+            <span className="text-[8px]">•</span>
+          )}
         </button>
 
         {/* Star */}
@@ -107,7 +111,7 @@ export function SidebarPageItem({
 
         {/* … menu */}
         <button
-          className="w-6 h-6 hidden group-hover:flex items-center justify-center text-slate-400 hover:text-slate-200"
+          className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => {
             const rect = (
               e.currentTarget as HTMLElement
