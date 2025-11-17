@@ -53,13 +53,18 @@ export function Sidebar() {
   return (
     <aside className="w-96 border-r border-white/5 bg-[#050814]/60 backdrop-blur-xl p-3 flex flex-col gap-3">
       {/* User card */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+      <button
+        onClick={() => {
+          usePages.getState().setCurrentPage("settings");
+        }}
+        className="w-full rounded-2xl bg-white/5 border border-white/10 p-3 hover:bg-white/10 transition-colors text-left"
+      >
         <div className="text-xs text-slate-400">Signed in</div>
         <div className="font-medium text-slate-100">
           {user?.name ?? user?.email ?? "Explorer"}
         </div>
         <div className="text-[10px] text-slate-500">{user?.email}</div>
-      </div>
+      </button>
 
       {/* Dashboard quick link */}
       <button

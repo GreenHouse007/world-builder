@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../services/http";
 //import { PageEditor } from "../../components/editor/PageEditor";
 import PageView from "../../components/layout/PageView";
+import UserSettings from "../settings/UserSettings";
 
 interface ActivityEvent {
   _id: string;
@@ -120,6 +121,11 @@ function HomePage() {
 
     return { icon, action, actionColor, pageTitle, isDeleted, page, extraInfo, userName };
   };
+
+  // If settings is selected, show settings page
+  if (currentPageId === "settings") {
+    return <UserSettings />;
+  }
 
   // If a page is selected, show the editor
   if (currentPageId) {
