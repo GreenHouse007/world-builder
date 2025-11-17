@@ -65,8 +65,7 @@ export function Sidebar() {
       <button
         className="w-full rounded-xl px-3 py-2 bg-white/5 hover:bg-white/10 text-sm text-slate-100 text-left"
         onClick={() => {
-          window.history.pushState(null, "", "/");
-          window.dispatchEvent(new PopStateEvent("popstate"));
+          usePages.getState().setCurrentPage(null);
         }}
       >
         🏠 Dashboard

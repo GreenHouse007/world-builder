@@ -10,6 +10,10 @@ export interface PageNode {
   emoji?: string;
   isCollapsed?: boolean; // UI-only
   isFavorite?: boolean; // UI-only
+  lastEditedAt?: Date | string;
+  lastEditedBy?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
   // computed at fetch time
   children?: PageNode[];
 }
@@ -73,10 +77,16 @@ export const usePages = create<PagesState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const data = await api<PageNode[]>(`/worlds/${worldId}/pages`);
+
+      // Fetch favorites for this world
+      const favorites = await api<{ pageId: string }[]>(`/worlds/${worldId}/favorites`);
+      const favoriteIds = new Set(favorites.map(f => f.pageId));
+
       const normalized = data.map((p) => ({
         ...p,
         position:
           typeof p.position === "number" ? p.position : Number(p.position) || 0,
+        isFavorite: favoriteIds.has(p._id),
       }));
       const tree = toTree(normalized);
       set({ pages: normalized, tree, loading: false, filteredIds: new Set() });
@@ -279,12 +289,45 @@ export const usePages = create<PagesState>((set, get) => ({
   },
 
   async toggleFavorite(id) {
+    // Optimistic update
+    const { pages } = get();
+    const page = pages.find(p => p._id === id);
+    if (!page) return;
+
+    const newFavoriteState = !page.isFavorite;
+
     set((s) => {
       const pages = s.pages.map((p) =>
-        p._id === id ? { ...p, isFavorite: !p.isFavorite } : p
+        p._id === id ? { ...p, isFavorite: newFavoriteState } : p
       );
       return { pages, tree: toTree(pages) };
     });
+
+    // Sync with backend
+    try {
+      if (newFavoriteState) {
+        // Add favorite
+        await api("/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ worldId: page.worldId, pageId: id }),
+        });
+      } else {
+        // Remove favorite
+        await api(`/favorites/${id}`, {
+          method: "DELETE",
+        });
+      }
+    } catch (e) {
+      console.error("[PAGES] toggleFavorite error", e);
+      // Revert on error
+      set((s) => {
+        const pages = s.pages.map((p) =>
+          p._id === id ? { ...p, isFavorite: !newFavoriteState } : p
+        );
+        return { pages, tree: toTree(pages) };
+      });
+    }
   },
 
   setCurrentPage(id) {
