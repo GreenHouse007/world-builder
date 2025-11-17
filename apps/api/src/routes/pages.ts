@@ -231,14 +231,14 @@ export const pagesRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true };
   });
 
-  // PATCH /pages/:pageId/move - change parent
+  // PATCH /pages/:pageId/move - change parent and/or position
   app.patch<{
     Params: { pageId: string };
-    Body: { parentId?: string | null };
+    Body: { parentId?: string | null; position?: number };
   }>("/pages/:pageId/move", async (req, reply) => {
     const uid = req.user!.uid;
     const { pageId } = req.params;
-    const { parentId } = req.body;
+    const { parentId, position } = req.body;
 
     const ctx = await ensurePageAccess(pageId, uid);
     if (!ctx) return reply.code(404).send({ error: "page not found" });
@@ -267,16 +267,82 @@ export const pagesRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: "page cannot be its own parent" });
     }
 
-    const last = await Pages.find({
-      worldId: world._id,
-      parentId: parentObjectId,
-    })
-      .sort({ position: -1 })
-      .limit(1)
-      .next();
-
     const now = new Date();
-    const newPos = (last?.position ?? 0) + 1;
+    let newPos: number;
+
+    const oldParentId = page.parentId;
+    const oldPosition = page.position;
+    const movingWithinSameParent =
+      oldParentId &&
+      parentObjectId &&
+      oldParentId.equals(parentObjectId);
+
+    if (position !== undefined && position >= 0) {
+      // Position specified - need to handle removal + insertion
+      newPos = position;
+
+      if (movingWithinSameParent) {
+        // Moving within the same parent - need to account for removal
+        if (oldPosition < position) {
+          // Moving down: shift pages between old and new position down
+          await Pages.updateMany(
+            {
+              worldId: world._id,
+              parentId: parentObjectId,
+              position: { $gt: oldPosition, $lte: position },
+              _id: { $ne: page._id },
+            },
+            { $inc: { position: -1 } }
+          );
+        } else if (oldPosition > position) {
+          // Moving up: shift pages between new and old position up
+          await Pages.updateMany(
+            {
+              worldId: world._id,
+              parentId: parentObjectId,
+              position: { $gte: position, $lt: oldPosition },
+              _id: { $ne: page._id },
+            },
+            { $inc: { position: 1 } }
+          );
+        }
+        // If oldPosition === position, no shifting needed
+      } else {
+        // Moving to a different parent
+        // Shift down siblings after old position in old parent
+        if (oldParentId) {
+          await Pages.updateMany(
+            {
+              worldId: world._id,
+              parentId: oldParentId,
+              position: { $gt: oldPosition },
+            },
+            { $inc: { position: -1 } }
+          );
+        }
+
+        // Shift up siblings at or after new position in new parent
+        await Pages.updateMany(
+          {
+            worldId: world._id,
+            parentId: parentObjectId,
+            position: { $gte: position },
+          },
+          { $inc: { position: 1 } }
+        );
+      }
+    } else {
+      // No position specified - append to end
+      const last = await Pages.find({
+        worldId: world._id,
+        parentId: parentObjectId,
+      })
+        .sort({ position: -1 })
+        .limit(1)
+        .next();
+
+      newPos = (last?.position ?? 0) + 1;
+    }
 
     await Pages.updateOne(
       { _id: page._id },

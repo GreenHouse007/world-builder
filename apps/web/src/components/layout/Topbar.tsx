@@ -9,7 +9,7 @@ import { ExportModal } from "../export/ExportModal";
 export function Topbar() {
   const { user, logout } = useAuth();
   const { worlds, currentWorldId, renameWorld } = useWorlds();
-  const { isSaving, lastSavedAt } = useAppStatus();
+  const { isSaving, hasUnsavedChanges, isOffline, lastSavedAt } = useAppStatus();
   const [showExport, setShowExport] = useState(false);
   const currentWorld = worlds.find((w) => w._id === currentWorldId) ?? null;
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -140,13 +140,21 @@ export function Topbar() {
         <div
           className={
             "px-4 py-1.5 rounded-full border " +
-            (isSaving
-              ? "bg-indigo-500/10 border-indigo-400/60 text-indigo-300"
+            (isOffline
+              ? "bg-red-500/10 border-red-400/60 text-red-300"
+              : isSaving
+              ? "bg-blue-500/10 border-blue-400/60 text-blue-300"
+              : hasUnsavedChanges
+              ? "bg-amber-500/10 border-amber-400/60 text-amber-300"
               : "bg-emerald-500/15 border-emerald-400/40 text-emerald-300")
           }
         >
-          {isSaving
+          {isOffline
+            ? "Offline"
+            : isSaving
             ? "Saving…"
+            : hasUnsavedChanges
+            ? "Unsaved changes"
             : lastSavedAt
             ? `Saved ${lastSavedAt}`
             : "All changes saved"}

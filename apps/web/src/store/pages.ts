@@ -18,6 +18,7 @@ interface PagesState {
   pages: PageNode[]; // flat
   tree: PageNode[]; // nested
   currentPageId: string | null;
+  editingPageId: string | null; // page that should enter edit mode
   loading: boolean;
   error: string | null;
 
@@ -29,10 +30,11 @@ interface PagesState {
   renamePage: (id: string, title: string) => Promise<void>;
   deletePage: (id: string) => Promise<void>;
   duplicatePage: (id: string) => Promise<PageNode | null>;
-  movePage: (id: string, newParentId: string | null) => Promise<void>;
+  movePage: (id: string, newParentId: string | null, position?: number) => Promise<void>;
   toggleCollapse: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   setCurrentPage: (id: string | null) => void;
+  setEditingPage: (id: string | null) => void;
   applyFilter: (q: string) => void; // client-side filter
   filteredIds: Set<string>; // ids visible for search
 }
@@ -62,6 +64,7 @@ export const usePages = create<PagesState>((set, get) => ({
   pages: [],
   tree: [],
   currentPageId: null,
+  editingPageId: null,
   loading: false,
   error: null,
   filteredIds: new Set<string>(),
@@ -98,8 +101,14 @@ export const usePages = create<PagesState>((set, get) => ({
             : Number(newPage.position) || 0,
       };
       set((s) => {
-        const pages = [...s.pages, normalized];
-        return { pages, tree: toTree(pages) };
+        // If creating a child, expand the parent so the new page is visible
+        let pages = [...s.pages, normalized];
+        if (parentId) {
+          pages = pages.map((p) =>
+            p._id === parentId ? { ...p, isCollapsed: false } : p
+          );
+        }
+        return { pages, tree: toTree(pages), editingPageId: normalized._id };
       });
       return normalized;
     } catch (e) {
@@ -174,29 +183,89 @@ export const usePages = create<PagesState>((set, get) => ({
     }
   },
 
-  async movePage(id, newParentId) {
-    try {
-      await api(`/pages/${id}/move`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parentId: newParentId }),
-      });
+  async movePage(id, newParentId, position) {
+    // Optimistic update - update UI immediately
+    const previousState = get();
+    set((s) => {
+      const movingPage = s.pages.find((p) => p._id === id);
+      if (!movingPage) return s;
 
-      // Update local state
-      set((s) => {
+      const oldParentId = movingPage.parentId;
+      const oldPosition = movingPage.position ?? 0;
+
+      let nextPos: number;
+
+      if (position !== undefined) {
+        // Position specified - need to carefully reorder
+        nextPos = position;
+
+        const pages = s.pages.map((p) => {
+          if (p._id === id) {
+            // Skip the moving page for now
+            return p;
+          }
+
+          // If moving within the same parent, we need to handle removal + insertion
+          if (oldParentId === newParentId) {
+            const pPos = p.position ?? 0;
+            if (p.parentId === newParentId) {
+              if (pPos > oldPosition && pPos <= position) {
+                // Pages between old and new position shift down
+                return { ...p, position: pPos - 1 };
+              } else if (pPos < oldPosition && pPos >= position) {
+                // Pages between new and old position shift up
+                return { ...p, position: pPos + 1 };
+              } else if (pPos === oldPosition) {
+                // Should not happen (this is the moving page)
+                return p;
+              }
+            }
+          } else {
+            // Moving to a different parent
+            // Shift down siblings after the old position in old parent
+            if (p.parentId === oldParentId && (p.position ?? 0) > oldPosition) {
+              return { ...p, position: (p.position ?? 0) - 1 };
+            }
+            // Shift up siblings at or after new position in new parent
+            if (p.parentId === newParentId && (p.position ?? 0) >= position) {
+              return { ...p, position: (p.position ?? 0) + 1 };
+            }
+          }
+
+          return p;
+        });
+
+        // Set the moved page's new position and parent
+        const finalPages = pages.map((p) =>
+          p._id === id ? { ...p, parentId: newParentId, position: nextPos } : p
+        );
+
+        return { pages: finalPages, tree: toTree(finalPages) };
+      } else {
+        // No position specified - append to end
         const siblingPositions = s.pages
-          .filter((p) => p.parentId === newParentId)
+          .filter((p) => p.parentId === newParentId && p._id !== id)
           .map((p) => p.position ?? 0);
-        const nextPos =
-          (siblingPositions.length ? Math.max(...siblingPositions) : 0) + 1;
+        nextPos = siblingPositions.length ? Math.max(...siblingPositions) + 1 : 0;
 
         const pages = s.pages.map((p) =>
           p._id === id ? { ...p, parentId: newParentId, position: nextPos } : p
         );
         return { pages, tree: toTree(pages) };
+      }
+    });
+
+    // Then sync with server
+    try {
+      await api(`/pages/${id}/move`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parentId: newParentId, position }),
       });
     } catch (e) {
       console.error("[PAGES] move error", e);
+      // Revert to previous state on error
+      set({ pages: previousState.pages, tree: previousState.tree });
     }
   },
 
@@ -220,6 +289,10 @@ export const usePages = create<PagesState>((set, get) => ({
 
   setCurrentPage(id) {
     set({ currentPageId: id });
+  },
+
+  setEditingPage(id) {
+    set({ editingPageId: id });
   },
 
   applyFilter(q) {

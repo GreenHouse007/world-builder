@@ -51,7 +51,7 @@ export function Sidebar() {
   const disabled = !currentWorldId;
 
   return (
-    <aside className="w-72 border-r border-white/5 bg-[#050814]/60 backdrop-blur-xl p-3 flex flex-col gap-3">
+    <aside className="w-96 border-r border-white/5 bg-[#050814]/60 backdrop-blur-xl p-3 flex flex-col gap-3">
       {/* User card */}
       <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
         <div className="text-xs text-slate-400">Signed in</div>

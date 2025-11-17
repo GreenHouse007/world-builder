@@ -158,10 +158,10 @@ export function DndTree({
 
     if (kind === "before" || kind === "after") {
       const pos = computeSiblingInsert(target, kind);
-      if (pos) await movePage(active, pos.parentId);
+      if (pos) await movePage(active, pos.parentId, pos.index);
     } else if (kind === "on") {
       const pos = computeReparent(target);
-      if (pos) await movePage(active, pos.parentId);
+      if (pos) await movePage(active, pos.parentId, pos.index);
     }
   }
 

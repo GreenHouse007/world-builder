@@ -7,7 +7,7 @@ import { TextEditor } from "../editor/TextEditor";
 
 function useDebouncedCallback<Args extends readonly unknown[], R>(
   fn: (...args: Args) => R,
-  delay = 900
+  delay = 3000
 ) {
   const t = useRef<number | null>(null);
   const fnRef = useRef<(...args: Args) => R>(fn);
@@ -33,11 +33,28 @@ type GetContentResp = { doc: string | null };
 export default function PageView() {
   const { currentWorldId } = useWorlds();
   const { currentPageId } = usePages();
-  const { setSaving, setSavedNow } = useAppStatus();
+  const { setSaving, setSavedNow, setUnsavedChanges, setOffline } = useAppStatus();
 
   const [initial, setInitial] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadErr, setLoadErr] = useState<string | null>(null);
+
+  // Detect online/offline status
+  useEffect(() => {
+    const handleOnline = () => setOffline(false);
+    const handleOffline = () => setOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Set initial state
+    setOffline(!navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [setOffline]);
 
   useEffect(() => {
     if (!currentPageId) {
@@ -56,20 +73,32 @@ export default function PageView() {
     async (html: string) => {
       if (!currentPageId) return;
       setSaving(true);
+      setOffline(false);
       try {
         await api(`/pages/${currentPageId}/content`, {
           method: "PUT",
           body: JSON.stringify({ doc: html }),
         });
         setSavedNow();
+      } catch (error) {
+        // Check if error is network-related
+        if (error instanceof TypeError || (error as any)?.message?.includes('fetch')) {
+          setOffline(true);
+        }
+        throw error;
       } finally {
         setSaving(false);
       }
     },
-    [currentPageId, setSaving, setSavedNow]
+    [currentPageId, setSaving, setSavedNow, setOffline]
   );
 
-  const debouncedSave = useDebouncedCallback(save, 900);
+  const debouncedSave = useDebouncedCallback(save, 3000);
+
+  const handleChange = useCallback((html: string) => {
+    setUnsavedChanges(true);
+    debouncedSave(html);
+  }, [debouncedSave, setUnsavedChanges]);
 
   const header = useMemo(() => {
     if (!currentWorldId) return "Select or create a world";
@@ -78,7 +107,7 @@ export default function PageView() {
   }, [currentWorldId, currentPageId]);
 
   return (
-    <div className="max-w-4xl mx-auto pt-6">
+    <div className="max-w-7xl mx-auto pt-6">
       {header && (
         <div className="text-sm text-slate-400 border border-dashed border-white/10 rounded-xl p-6 text-center">
           {header}
@@ -101,7 +130,7 @@ export default function PageView() {
         <TextEditor
           key={currentPageId}
           initialContent={initial}
-          onChange={debouncedSave}
+          onChange={handleChange}
           onSaveStart={() => setSaving(true)}
           onSaveEnd={() => setSaving(false)}
         />
