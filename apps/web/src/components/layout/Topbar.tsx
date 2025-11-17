@@ -5,6 +5,7 @@ import { useWorlds } from "../../store/worlds";
 import { useAppStatus } from "../../store/appStatus";
 import { TopbarWorldMenu } from "./TopbarWorldMenu";
 import { ExportModal } from "../export/ExportModal";
+import { ShareWorldModal } from "../sharing/ShareWorldModal";
 
 export function Topbar() {
   const { user, logout } = useAuth();
@@ -26,6 +27,7 @@ export function Topbar() {
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(currentWorld?.name ?? "");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareWorldId, setShareWorldId] = useState<string | null>(null);
 
   // Keep the draft name in sync when the current world changes
   useEffect(() => {
@@ -129,6 +131,7 @@ export function Topbar() {
           {menuOpen && (
             <TopbarWorldMenu
               onClose={() => setMenuOpen(false)}
+              onShareWorld={(worldId) => setShareWorldId(worldId)}
               buttonRef={menuButtonRef}
             />
           )}
@@ -167,6 +170,18 @@ export function Topbar() {
           Export
         </button>
         {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+
+        {/* Share World Modal */}
+        {shareWorldId && (() => {
+          const shareWorld = worlds.find(w => w._id === shareWorldId);
+          return shareWorld ? (
+            <ShareWorldModal
+              worldId={shareWorldId}
+              worldName={shareWorld.name}
+              onClose={() => setShareWorldId(null)}
+            />
+          ) : null;
+        })()}
 
         {user && (
           <button

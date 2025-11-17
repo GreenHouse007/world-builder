@@ -561,11 +561,11 @@ export const pagesRoutes: FastifyPluginAsync = async (app) => {
 
     // Get old content for word count comparison
     const oldContent = await PageContent.findOne({ pageId: page._id });
-    const oldWordCount = oldContent?.doc
-      ? oldContent.doc.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(w => w.length > 0).length
+    const oldWordCount = oldContent?.doc && typeof oldContent.doc === 'string'
+      ? (oldContent.doc as string).replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter((w: string) => w.length > 0).length
       : 0;
-    const newWordCount = doc
-      ? doc.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(w => w.length > 0).length
+    const newWordCount = doc && typeof doc === 'string'
+      ? (doc as string).replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter((w: string) => w.length > 0).length
       : 0;
     const wordCountDiff = newWordCount - oldWordCount;
 

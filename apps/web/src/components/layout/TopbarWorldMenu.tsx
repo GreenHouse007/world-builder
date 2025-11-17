@@ -4,10 +4,11 @@ import { useWorlds } from "../../store/worlds";
 
 interface Props {
   onClose: () => void;
+  onShareWorld: (worldId: string) => void;
   buttonRef?: React.RefObject<HTMLElement>;
 }
 
-export function TopbarWorldMenu({ onClose, buttonRef }: Props) {
+export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
   const {
     worlds,
     currentWorldId,
@@ -33,14 +34,14 @@ export function TopbarWorldMenu({ onClose, buttonRef }: Props) {
   }, [buttonRef]);
 
   return createPortal(
-    <div
-      className="fixed w-80 rounded-2xl border border-white/10 bg-[#0a0f1a] shadow-2xl p-2 z-[100] transition-opacity duration-150"
-      style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-        opacity: isPositioned ? 1 : 0,
-      }}
-    >
+        <div
+          className="fixed w-80 rounded-2xl border border-white/10 bg-[#0a0f1a] shadow-2xl p-2 z-[100] transition-opacity duration-150"
+          style={{
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            opacity: isPositioned ? 1 : 0,
+          }}
+        >
       <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500">
         Worlds
       </div>
@@ -74,7 +75,7 @@ export function TopbarWorldMenu({ onClose, buttonRef }: Props) {
                   const clone = await createWorld(`${w.name} (Copy)`, w.emoji);
                   if (clone) setWorld(clone._id);
                 }}
-                onShare={() => alert("Sharing UI TBD")}
+                onShare={() => onShareWorld(w._id)}
                 onDelete={async () => {
                   const confirmDelete = confirm(`Delete "${w.name}"? This removes all pages and cannot be undone.`);
                   console.log("[DELETE] Confirm result:", confirmDelete);
@@ -166,6 +167,26 @@ function WorldInlineMenu({
         left: rect.right - 176, // 176px is menu width (w-44 = 11rem = 176px)
       });
     }
+  }, [open]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    // Add a small delay to prevent immediate closing
+    setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, [open]);
 
   return (

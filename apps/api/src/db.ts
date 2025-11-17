@@ -6,6 +6,8 @@ export { ObjectId };
 
 export interface WorldMember {
   uid: string;
+  email?: string;
+  displayName?: string;
   role: "owner" | "admin" | "editor" | "viewer";
   addedAt: Date;
 }
@@ -70,12 +72,26 @@ export interface WorldActivityDoc {
   createdAt: Date;
 }
 
+export interface WorldInvitationDoc {
+  _id: ObjectId;
+  worldId: ObjectId;
+  worldName: string;
+  inviterUid: string;
+  inviterEmail: string;
+  inviteeEmail: string;
+  role: "admin" | "editor";
+  status: "pending" | "accepted" | "rejected";
+  createdAt: Date;
+  respondedAt?: Date;
+}
+
 export interface Collections {
   Worlds: Collection<WorldDoc>;
   Pages: Collection<PageDoc>;
   PageContent: Collection<PageContentDoc>;
   Favorites: Collection<FavoriteDoc>;
   WorldActivity: Collection<WorldActivityDoc>;
+  WorldInvitations: Collection<WorldInvitationDoc>;
 }
 
 let collections: Collections | null = null;
@@ -98,6 +114,7 @@ export async function initDb(): Promise<void> {
     PageContent: db.collection<PageContentDoc>("page_content"),
     Favorites: db.collection<FavoriteDoc>("favorites"),
     WorldActivity: db.collection<WorldActivityDoc>("world_activity"),
+    WorldInvitations: db.collection<WorldInvitationDoc>("world_invitations"),
   };
 
   // Indexes (run once, cheap if they already exist)
@@ -109,6 +126,8 @@ export async function initDb(): Promise<void> {
     collections.PageContent.createIndex({ pageId: 1 }),
     collections.Favorites.createIndex({ uid: 1, worldId: 1 }),
     collections.WorldActivity.createIndex({ worldId: 1, createdAt: -1 }),
+    collections.WorldInvitations.createIndex({ inviteeEmail: 1, status: 1 }),
+    collections.WorldInvitations.createIndex({ worldId: 1, inviteeEmail: 1 }),
   ]);
 }
 

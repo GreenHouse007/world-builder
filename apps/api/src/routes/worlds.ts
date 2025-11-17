@@ -53,8 +53,10 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const now = new Date();
+    const email = req.user!.email;
     const member: WorldMember = {
       uid,
+      email: email || undefined,
       role: "owner",
       addedAt: now,
     };

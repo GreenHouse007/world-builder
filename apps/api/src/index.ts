@@ -10,6 +10,7 @@ import { pagesRoutes } from "./routes/pages";
 import { favoritesRoutes } from "./routes/favorites";
 import { activityRoutes } from "./routes/activity";
 import { exportRoutes } from "./routes/export";
+import { invitationsRoutes } from "./routes/invitations";
 
 async function buildServer() {
   const app = Fastify({ logger: true });
@@ -61,6 +62,7 @@ async function buildServer() {
   await app.register(favoritesRoutes);
   await app.register(activityRoutes);
   await app.register(exportRoutes);
+  await app.register(invitationsRoutes);
 
   return app;
 }

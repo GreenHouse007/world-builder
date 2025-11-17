@@ -5,6 +5,8 @@ import { api } from "../../services/http";
 //import { PageEditor } from "../../components/editor/PageEditor";
 import PageView from "../../components/layout/PageView";
 import UserSettings from "../settings/UserSettings";
+import { WorldSharingWidget } from "../../components/sharing/WorldSharingWidget";
+import { InvitationsWidget } from "../../components/sharing/InvitationsWidget";
 
 interface ActivityEvent {
   _id: string;
@@ -254,6 +256,12 @@ function HomePage() {
 
       {/* Right: side widgets */}
       <aside className="space-y-4 text-xs">
+        {/* Invitations widget */}
+        <InvitationsWidget />
+
+        {/* World Sharing widget */}
+        <WorldSharingWidget />
+
         {/* Favorites widget */}
         <div className="bg-white/3 border border-amber-500/30 rounded-3xl p-4">
           <div className="font-medium text-slate-100 flex items-center gap-2">
@@ -291,9 +299,9 @@ function HomePage() {
         <div className="bg-white/3 border border-white/8 rounded-3xl p-4">
           <div className="font-medium text-slate-100">Coming soon</div>
           <ul className="mt-2 space-y-1 text-slate-400">
-            <li>👥 Real-time collaboration.</li>
             <li>📚 Multi-document PDF exports.</li>
             <li>🔗 Linked references across worlds.</li>
+            <li>💬 Real-time co-editing.</li>
           </ul>
         </div>
       </aside>
