@@ -5,6 +5,69 @@ import { useAppStatus } from "../../store/appStatus";
 import { api } from "../../services/http";
 import { TextEditor } from "../editor/TextEditor";
 
+function EditablePageTitle({ pageId, initialTitle }: { pageId: string; initialTitle: string }) {
+  const { renamePage } = usePages();
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState(initialTitle);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setTitle(initialTitle);
+  }, [initialTitle]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      setTitle(initialTitle);
+      setIsEditing(false);
+      return;
+    }
+    if (title !== initialTitle) {
+      await renamePage(pageId, title.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      setTitle(initialTitle);
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        className="w-full text-3xl font-bold text-slate-100 bg-transparent border-b-2 border-purple-500 outline-none px-2 py-1"
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <h1
+      onClick={() => setIsEditing(true)}
+      className="text-3xl font-bold text-slate-100 cursor-pointer hover:text-purple-300 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+      title="Click to edit page title"
+    >
+      {title || "Untitled Page"}
+    </h1>
+  );
+}
+
 function useDebouncedCallback<Args extends readonly unknown[], R>(
   fn: (...args: Args) => R,
   delay = 3000
@@ -32,8 +95,10 @@ type GetContentResp = { doc: string | null };
 
 export default function PageView() {
   const { currentWorldId } = useWorlds();
-  const { currentPageId } = usePages();
+  const { currentPageId, pages } = usePages();
   const { setSaving, setSavedNow, setUnsavedChanges, setOffline } = useAppStatus();
+
+  const currentPage = pages.find((p) => p._id === currentPageId);
 
   const [initial, setInitial] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -126,14 +191,20 @@ export default function PageView() {
         </div>
       )}
 
-      {!header && !loading && !loadErr && (
-        <TextEditor
-          key={currentPageId}
-          initialContent={initial}
-          onChange={handleChange}
-          onSaveStart={() => setSaving(true)}
-          onSaveEnd={() => setSaving(false)}
-        />
+      {!header && !loading && !loadErr && currentPage && (
+        <div className="space-y-4">
+          <EditablePageTitle
+            pageId={currentPageId!}
+            initialTitle={currentPage.title}
+          />
+          <TextEditor
+            key={currentPageId}
+            initialContent={initial}
+            onChange={handleChange}
+            onSaveStart={() => setSaving(true)}
+            onSaveEnd={() => setSaving(false)}
+          />
+        </div>
       )}
     </div>
   );

@@ -1,34 +1,212 @@
+import { useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { TableInsertModal } from "./TableInsertModal";
 
 export function EditorToolbar({ editor }: { editor: Editor | null }) {
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [showFontMenu, setShowFontMenu] = useState(false);
+  const [showFontSizeMenu, setShowFontSizeMenu] = useState(false);
+  const [showAlignMenu, setShowAlignMenu] = useState(false);
+  const [showSpacingMenu, setShowSpacingMenu] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+
   if (!editor) return null;
+
+  const fonts = [
+    { name: "Default", value: "" },
+    { name: "Arial", value: "Arial, sans-serif" },
+    { name: "Times New Roman", value: "'Times New Roman', serif" },
+    { name: "Courier New", value: "'Courier New', monospace" },
+    { name: "Georgia", value: "Georgia, serif" },
+    { name: "Verdana", value: "Verdana, sans-serif" },
+    { name: "Comic Sans MS", value: "'Comic Sans MS', cursive" },
+  ];
+
+  const fontSizes = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px", "36px"];
+
+  const colors = [
+    "#000000", "#FFFFFF", "#FF0000", "#00FF00", "#0000FF",
+    "#FFFF00", "#FF00FF", "#00FFFF", "#FFA500", "#800080",
+    "#FFC0CB", "#A52A2A", "#808080", "#008000", "#000080",
+  ];
+
+  const lineHeights = [
+    { name: "Single", value: "1" },
+    { name: "1.15", value: "1.15" },
+    { name: "1.5", value: "1.5" },
+    { name: "Double", value: "2" },
+  ];
+
+  // Get current values from editor
+  const getCurrentFont = () => {
+    const fontFamily = editor.getAttributes("textStyle").fontFamily;
+    if (!fontFamily) return "Default";
+    const found = fonts.find((f) => f.value === fontFamily);
+    return found ? found.name : "Default";
+  };
+
+  const getCurrentFontSize = () => {
+    const fontSize = editor.getAttributes("textStyle").fontSize;
+    return fontSize || "16px";
+  };
+
+  const getCurrentColor = () => {
+    const color = editor.getAttributes("textStyle").color;
+    return color || "#FFFFFF";
+  };
+
+  const getCurrentHighlight = () => {
+    const highlight = editor.getAttributes("highlight").color;
+    return highlight || "None";
+  };
+
+  const getCurrentAlign = () => {
+    if (editor.isActive({ textAlign: "left" })) return "Left";
+    if (editor.isActive({ textAlign: "center" })) return "Center";
+    if (editor.isActive({ textAlign: "right" })) return "Right";
+    return "Left";
+  };
+
+  const getCurrentLineHeight = () => {
+    // Try to get line height from paragraph first, then heading
+    let lineHeight = editor.getAttributes("paragraph").lineHeight;
+    if (!lineHeight) {
+      lineHeight = editor.getAttributes("heading").lineHeight;
+    }
+    if (!lineHeight) return "Single";
+    const found = lineHeights.find((lh) => lh.value === lineHeight);
+    return found ? found.name : "Single";
+  };
 
   const Btn = ({
     active,
     onClick,
     label,
     title,
+    icon,
   }: {
     active?: boolean;
     onClick: () => void;
-    label: string;
+    label?: string;
     title?: string;
+    icon?: string;
   }) => (
     <button
       type="button"
       title={title || label}
       onClick={onClick}
       className={
-        "px-2 py-1 rounded-lg text-sm mr-1 " +
-        (active ? "bg-white/15 text-slate-50" : "bg-white/5 hover:bg-white/10")
+        "px-2.5 py-1.5 rounded-lg text-sm transition-colors " +
+        (active
+          ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+          : "bg-white/5 hover:bg-white/10 text-slate-300 border border-transparent")
       }
     >
-      {label}
+      {icon || label}
     </button>
   );
 
+  const Dropdown = ({
+    topLabel,
+    currentValue,
+    isOpen,
+    onToggle,
+    children,
+  }: {
+    topLabel?: string;
+    currentValue: string;
+    isOpen: boolean;
+    onToggle: () => void;
+    children: React.ReactNode;
+  }) => (
+    <div className="relative flex flex-col">
+      {topLabel && (
+        <span className="text-[10px] text-slate-400 mb-0.5 px-1">{topLabel}</span>
+      )}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="px-3 py-1.5 rounded-lg text-sm bg-white/5 hover:bg-white/10 text-slate-300 border border-transparent transition-colors flex items-center gap-1 min-w-[80px]"
+      >
+        <span className="flex-1 text-left truncate">{currentValue}</span>
+        <span className="text-xs">▼</span>
+      </button>
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => {
+              setShowFontMenu(false);
+              setShowFontSizeMenu(false);
+              setShowAlignMenu(false);
+              setShowSpacingMenu(false);
+              setShowColorPicker(false);
+              setShowHighlightPicker(false);
+            }}
+          />
+          <div className="absolute top-full left-0 mt-1 bg-[#0a0f1a] border border-white/10 rounded-lg shadow-xl z-20 min-w-[160px] max-h-[300px] overflow-y-auto">
+            {children}
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex flex-wrap items-center gap-2 p-2">
+      {/* Font Family */}
+      <Dropdown
+        topLabel="Font"
+        currentValue={getCurrentFont()}
+        isOpen={showFontMenu}
+        onToggle={() => setShowFontMenu(!showFontMenu)}
+      >
+        {fonts.map((font) => (
+          <button
+            key={font.value}
+            type="button"
+            onClick={() => {
+              if (font.value) {
+                editor.chain().focus().setFontFamily(font.value).run();
+              } else {
+                editor.chain().focus().unsetFontFamily().run();
+              }
+              setShowFontMenu(false);
+            }}
+            className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+            style={{ fontFamily: font.value || undefined }}
+          >
+            {font.name}
+          </button>
+        ))}
+      </Dropdown>
+
+      {/* Font Size */}
+      <Dropdown
+        topLabel="Size"
+        currentValue={getCurrentFontSize()}
+        isOpen={showFontSizeMenu}
+        onToggle={() => setShowFontSizeMenu(!showFontSizeMenu)}
+      >
+        {fontSizes.map((size) => (
+          <button
+            key={size}
+            type="button"
+            onClick={() => {
+              editor.chain().focus().setFontSize(size).run();
+              setShowFontSizeMenu(false);
+            }}
+            className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+          >
+            {size}
+          </button>
+        ))}
+      </Dropdown>
+
+      <span className="h-6 w-px bg-white/10" />
+
+      {/* Bold, Italic, Underline, Strike */}
       <Btn
         label="B"
         title="Bold"
@@ -54,59 +232,178 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
         onClick={() => editor.chain().focus().toggleStrike().run()}
       />
 
-      <span className="mx-2 h-5 w-px bg-white/10" />
+      <span className="h-6 w-px bg-white/10" />
 
-      <Btn
-        label="H1"
-        active={editor.isActive("heading", { level: 1 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-      />
-      <Btn
-        label="H2"
-        active={editor.isActive("heading", { level: 2 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-      />
-      <Btn
-        label="H3"
-        active={editor.isActive("heading", { level: 3 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-      />
+      {/* Text Color */}
+      <Dropdown
+        topLabel="Color"
+        currentValue={getCurrentColor()}
+        isOpen={showColorPicker}
+        onToggle={() => setShowColorPicker(!showColorPicker)}
+      >
+        <div className="grid grid-cols-5 gap-1 p-2">
+          {colors.map((color) => (
+            <button
+              key={color}
+              type="button"
+              onClick={() => {
+                editor.chain().focus().setColor(color).run();
+                setShowColorPicker(false);
+              }}
+              className="w-8 h-8 rounded border border-white/20 hover:border-white/40 transition-colors"
+              style={{ backgroundColor: color }}
+              title={color}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            editor.chain().focus().unsetColor().run();
+            setShowColorPicker(false);
+          }}
+          className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300 border-t border-white/10"
+        >
+          Reset Color
+        </button>
+      </Dropdown>
 
-      <span className="mx-2 h-5 w-px bg-white/10" />
+      {/* Highlight */}
+      <Dropdown
+        topLabel="Highlight"
+        currentValue={getCurrentHighlight()}
+        isOpen={showHighlightPicker}
+        onToggle={() => setShowHighlightPicker(!showHighlightPicker)}
+      >
+        <div className="grid grid-cols-5 gap-1 p-2">
+          {colors.map((color) => (
+            <button
+              key={color}
+              type="button"
+              onClick={() => {
+                editor.chain().focus().toggleHighlight({ color }).run();
+                setShowHighlightPicker(false);
+              }}
+              className="w-8 h-8 rounded border border-white/20 hover:border-white/40 transition-colors"
+              style={{ backgroundColor: color }}
+              title={color}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            editor.chain().focus().unsetHighlight().run();
+            setShowHighlightPicker(false);
+          }}
+          className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300 border-t border-white/10"
+        >
+          Remove Highlight
+        </button>
+      </Dropdown>
 
+      <span className="h-6 w-px bg-white/10" />
+
+      {/* Alignment */}
+      <Dropdown
+        topLabel="Align"
+        currentValue={getCurrentAlign()}
+        isOpen={showAlignMenu}
+        onToggle={() => setShowAlignMenu(!showAlignMenu)}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            editor.chain().focus().setTextAlign('left').run();
+            setShowAlignMenu(false);
+          }}
+          className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300 flex items-center gap-2"
+        >
+          <span>⬅</span> Left
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            editor.chain().focus().setTextAlign('center').run();
+            setShowAlignMenu(false);
+          }}
+          className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300 flex items-center gap-2"
+        >
+          <span>↔</span> Center
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            editor.chain().focus().setTextAlign('right').run();
+            setShowAlignMenu(false);
+          }}
+          className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300 flex items-center gap-2"
+        >
+          <span>➡</span> Right
+        </button>
+      </Dropdown>
+
+      {/* Line Spacing */}
+      <Dropdown
+        topLabel="Spacing"
+        currentValue={getCurrentLineHeight()}
+        isOpen={showSpacingMenu}
+        onToggle={() => setShowSpacingMenu(!showSpacingMenu)}
+      >
+        {lineHeights.map((lh) => (
+          <button
+            key={lh.value}
+            type="button"
+            onClick={() => {
+              editor.chain().focus().setLineHeight(lh.value).run();
+              setShowSpacingMenu(false);
+            }}
+            className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+          >
+            {lh.name}
+          </button>
+        ))}
+      </Dropdown>
+
+      <span className="h-6 w-px bg-white/10" />
+
+      {/* Lists */}
       <Btn
         label="• List"
+        title="Bullet List"
         active={editor.isActive("bulletList")}
         onClick={() => editor.chain().focus().toggleBulletList().run()}
       />
       <Btn
         label="1. List"
+        title="Numbered List"
         active={editor.isActive("orderedList")}
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
       />
-      <Btn
-        label="Quote"
-        active={editor.isActive("blockquote")}
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-      />
+
+      <span className="h-6 w-px bg-white/10" />
+
+      {/* Horizontal Rule */}
       <Btn
         label="—"
-        title="Horizontal rule"
+        title="Horizontal Line"
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
       />
 
-      <span className="mx-2 h-5 w-px bg-white/10" />
+      {/* Table */}
+      <Btn
+        label="⊞ Table"
+        title="Insert Table"
+        onClick={() => setShowTableModal(true)}
+      />
 
-      <Btn
-        label="Code"
-        active={editor.isActive("code")}
-        onClick={() => editor.chain().focus().toggleCode().run()}
-      />
-      <Btn
-        label="Clear"
-        title="Clear marks"
-        onClick={() => editor.chain().focus().unsetAllMarks().run()}
-      />
+      {/* Table Modal */}
+      {showTableModal && (
+        <TableInsertModal
+          editor={editor}
+          onClose={() => setShowTableModal(false)}
+        />
+      )}
     </div>
   );
 }
