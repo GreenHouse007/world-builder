@@ -156,6 +156,156 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true };
   });
 
+  // POST /worlds/:worldId/duplicate - duplicate world with all pages
+  app.post<{
+    Params: { worldId: string };
+  }>("/worlds/:worldId/duplicate", async (req, reply) => {
+    const uid = req.user!.uid;
+    const { worldId } = req.params;
+
+    let worldObjectId: ObjectId;
+    try {
+      worldObjectId = new ObjectId(worldId);
+    } catch {
+      return reply.code(400).send({ error: "invalid worldId" });
+    }
+
+    const sourceWorld = await Worlds.findOne({ _id: worldObjectId });
+    if (!sourceWorld) return reply.code(404).send({ error: "world not found" });
+
+    // Check if user is a member (or owner for backward compatibility)
+    const members = sourceWorld.members || [];
+    const isMember = members.some((m) => m.uid === uid);
+    const isOwner = sourceWorld.ownerUid === uid;
+
+    if (!isMember && !isOwner) {
+      return reply.code(403).send({ error: "forbidden" });
+    }
+
+    const now = new Date();
+    const email = req.user!.email;
+    const ownerMember: WorldMember = {
+      uid,
+      email: email || undefined,
+      role: "owner",
+      addedAt: now,
+    };
+
+    // Create new world
+    const newWorld: WorldDoc = {
+      _id: new ObjectId(),
+      ownerUid: uid,
+      name: `${sourceWorld.name} (Copy)`,
+      emoji: sourceWorld.emoji,
+      members: [ownerMember],
+      stats: {
+        pageCount: 0,
+        favoriteCount: 0,
+        collaboratorCount: 1,
+      },
+      createdAt: now,
+      updatedAt: now,
+      lastActivityAt: now,
+    };
+
+    await Worlds.insertOne(newWorld);
+
+    // Fetch all pages from source world
+    const sourcePages = await Pages.find({ worldId: worldObjectId })
+      .sort({ position: 1 })
+      .toArray();
+
+    // Map old page IDs to new page IDs to maintain parent-child relationships
+    const pageIdMap = new Map<string, ObjectId>();
+
+    // Duplicate pages
+    for (const sourcePage of sourcePages) {
+      const newPageId = new ObjectId();
+      pageIdMap.set(sourcePage._id.toString(), newPageId);
+
+      // Map parent ID if it exists
+      const newParentId = sourcePage.parentId
+        ? pageIdMap.get(sourcePage.parentId.toString()) || null
+        : null;
+
+      const newPage: any = {
+        _id: newPageId,
+        ownerUid: uid,
+        worldId: newWorld._id,
+        title: sourcePage.title,
+        emoji: sourcePage.emoji,
+        parentId: newParentId,
+        position: sourcePage.position,
+        createdAt: now,
+        updatedAt: now,
+        lastEditedBy: uid,
+        lastEditedAt: now,
+      };
+
+      await Pages.insertOne(newPage);
+
+      // Copy page content if it exists
+      const sourceContent = await PageContent.findOne({
+        pageId: sourcePage._id,
+        ownerUid: sourcePage.ownerUid,
+      });
+
+      if (sourceContent) {
+        await PageContent.insertOne({
+          _id: new ObjectId(),
+          ownerUid: uid,
+          worldId: newWorld._id,
+          pageId: newPageId,
+          doc: sourceContent.doc,
+          lastEditedBy: uid,
+          updatedAt: now,
+        });
+      }
+    }
+
+    // Update world stats
+    await Worlds.updateOne(
+      { _id: newWorld._id },
+      {
+        $set: {
+          "stats.pageCount": sourcePages.length,
+          lastActivityAt: now,
+          updatedAt: now,
+        },
+      }
+    );
+
+    // Log activity
+    await WorldActivity.insertOne({
+      _id: new ObjectId(),
+      worldId: newWorld._id,
+      actorUid: uid,
+      type: "world_created",
+      meta: {
+        name: newWorld.name,
+        duplicatedFrom: sourceWorld._id.toString(),
+        pageCount: sourcePages.length,
+      },
+      createdAt: now,
+    });
+
+    return {
+      _id: newWorld._id.toString(),
+      name: newWorld.name,
+      emoji: newWorld.emoji,
+      ownerUid: newWorld.ownerUid,
+      members: newWorld.members,
+      stats: {
+        pageCount: sourcePages.length,
+        favoriteCount: 0,
+        collaboratorCount: 1,
+      },
+      createdAt: newWorld.createdAt,
+      updatedAt: newWorld.updatedAt,
+      lastActivityAt: newWorld.lastActivityAt,
+    };
+  });
+
   // DELETE /worlds/:worldId - cascades pages, content, favorites, activity
   app.delete<{
     Params: { worldId: string };

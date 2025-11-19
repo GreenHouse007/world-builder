@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { Editor } from "@tiptap/react";
 import { TableInsertModal } from "./TableInsertModal";
+import { uploadImage } from "../../lib/imageUpload";
 
 export function EditorToolbar({ editor }: { editor: Editor | null }) {
   const [showTableModal, setShowTableModal] = useState(false);
@@ -10,8 +11,38 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
   const [showSpacingMenu, setShowSpacingMenu] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+  const [showImageAlignMenu, setShowImageAlignMenu] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!editor) return null;
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const imageFile = files[0];
+    if (!imageFile.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    try {
+      const url = await uploadImage(imageFile);
+      editor.chain().focus().setImage({ src: url, alt: imageFile.name }).run();
+      // Update the image attributes to set default height
+      const { state } = editor;
+      const { selection } = state;
+      editor.chain().focus().updateAttributes("resizableImage", { height: "300px" }).run();
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      alert("Failed to upload image");
+    }
+
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const fonts = [
     { name: "Default", value: "" },
@@ -79,6 +110,19 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
     return found ? found.name : "Single";
   };
 
+  const isImageSelected = () => {
+    return editor.isActive("resizableImage");
+  };
+
+  const getCurrentImageAlign = () => {
+    const attrs = editor.getAttributes("resizableImage");
+    if (attrs.float === "left") return "Wrap Right";
+    if (attrs.float === "right") return "Wrap Left";
+    if (attrs.align === "center") return "Center";
+    if (attrs.align === "right") return "Right";
+    return "Left";
+  };
+
   const Btn = ({
     active,
     onClick,
@@ -143,6 +187,7 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
               setShowSpacingMenu(false);
               setShowColorPicker(false);
               setShowHighlightPicker(false);
+              setShowImageAlignMenu(false);
             }}
           />
           <div className="absolute top-full left-0 mt-1 bg-[#0a0f1a] border border-white/10 rounded-lg shadow-xl z-20 min-w-[160px] max-h-[300px] overflow-y-auto">
@@ -388,6 +433,87 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
         label="—"
         title="Horizontal Line"
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
+      />
+
+      {/* Image Alignment - only show when image is selected */}
+      {isImageSelected() && (
+        <>
+          <span className="h-6 w-px bg-white/10" />
+          <Dropdown
+            topLabel="Image"
+            currentValue={getCurrentImageAlign()}
+            isOpen={showImageAlignMenu}
+            onToggle={() => setShowImageAlignMenu(!showImageAlignMenu)}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                editor.chain().focus().setImageAlign("left").run();
+                setShowImageAlignMenu(false);
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+            >
+              Left
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                editor.chain().focus().setImageAlign("center").run();
+                setShowImageAlignMenu(false);
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+            >
+              Center
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                editor.chain().focus().setImageAlign("right").run();
+                setShowImageAlignMenu(false);
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+            >
+              Right
+            </button>
+            <div className="h-px bg-white/10 my-1" />
+            <button
+              type="button"
+              onClick={() => {
+                editor.chain().focus().setImageFloat("left").run();
+                setShowImageAlignMenu(false);
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+            >
+              Wrap Right (Float Left)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                editor.chain().focus().setImageFloat("right").run();
+                setShowImageAlignMenu(false);
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+            >
+              Wrap Left (Float Right)
+            </button>
+          </Dropdown>
+        </>
+      )}
+
+      <span className="h-6 w-px bg-white/10" />
+
+      {/* Image */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        style={{ display: "none" }}
+      />
+      <Btn
+        label="🖼 Image"
+        title="Insert Image"
+        onClick={() => fileInputRef.current?.click()}
       />
 
       {/* Table */}

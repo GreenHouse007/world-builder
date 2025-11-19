@@ -14,6 +14,7 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
     currentWorldId,
     setWorld,
     createWorld,
+    duplicateWorld,
     renameWorld,
     deleteWorld,
   } = useWorlds();
@@ -72,7 +73,7 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
                     await renameWorld(w._id, name.trim());
                 }}
                 onDuplicate={async () => {
-                  const clone = await createWorld(`${w.name} (Copy)`, w.emoji);
+                  const clone = await duplicateWorld(w._id);
                   if (clone) setWorld(clone._id);
                 }}
                 onShare={() => onShareWorld(w._id)}

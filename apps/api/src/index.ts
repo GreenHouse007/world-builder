@@ -1,6 +1,7 @@
 // apps/api/src/index.ts
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import multipart from "@fastify/multipart";
 import "dotenv/config";
 import { initFirebase, verifyBearer } from "./auth";
 import { initDb } from "./db";
@@ -11,6 +12,7 @@ import { favoritesRoutes } from "./routes/favorites";
 import { activityRoutes } from "./routes/activity";
 import { exportRoutes } from "./routes/export";
 import { invitationsRoutes } from "./routes/invitations";
+import { uploadRoutes } from "./routes/upload";
 
 async function buildServer() {
   const app = Fastify({ logger: true });
@@ -23,6 +25,13 @@ async function buildServer() {
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ✅ allow PATCH
     allowedHeaders: ["Content-Type", "Authorization"], // ✅ allow bearer token
     credentials: true,
+  });
+
+  // ✅ Register multipart for file uploads
+  await app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB max file size
+    },
   });
 
   initFirebase();
@@ -63,6 +72,7 @@ async function buildServer() {
   await app.register(activityRoutes);
   await app.register(exportRoutes);
   await app.register(invitationsRoutes);
+  await app.register(uploadRoutes);
 
   return app;
 }

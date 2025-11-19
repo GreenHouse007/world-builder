@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -15,6 +15,8 @@ import { TextAlign } from "@tiptap/extension-text-align";
 
 import { EditorToolbar } from "./EditorToolbar";
 import { TableContextMenu } from "./TableContextMenu";
+import { EditorContextMenu } from "./EditorContextMenu";
+import { ImageContextMenu } from "./ImageContextMenu";
 // import { EditorBubble } from "./EditorBubbleMenu"; // TODO: Fix for Tiptap v3
 import SlashCommand from "../../extensions/SlashCommand";
 import { BlockDragHandle } from "../../extensions/BlockDragHandle";
@@ -24,6 +26,8 @@ import { FontSize } from "../../extensions/FontSize";
 import { LineHeight } from "../../extensions/LineHeight";
 import { CustomTableCell } from "../../extensions/CustomTableCell";
 import { CustomTableHeader } from "../../extensions/CustomTableHeader";
+import { ResizableImage } from "../../extensions/ResizableImage";
+import { uploadImage } from "../../lib/imageUpload";
 
 type Props = {
   initialContent: string | null;
@@ -43,6 +47,11 @@ export function TextEditor({
   const [html, setHtml] = useState(initialContent || "");
   const [showTableMenu, setShowTableMenu] = useState(false);
   const [tableMenuPos, setTableMenuPos] = useState({ x: 0, y: 0 });
+  const [showEditorMenu, setShowEditorMenu] = useState(false);
+  const [editorMenuPos, setEditorMenuPos] = useState({ x: 0, y: 0 });
+  const [showImageMenu, setShowImageMenu] = useState(false);
+  const [imageMenuPos, setImageMenuPos] = useState({ x: 0, y: 0 });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -78,6 +87,12 @@ export function TextEditor({
         types: ['paragraph', 'heading'],
       }),
 
+      // images
+      ResizableImage.configure({
+        inline: true,
+        allowBase64: false,
+      }),
+
       // tables
       Table.configure({ resizable: true, lastColumnResizable: true }),
       TableRow,
@@ -99,6 +114,7 @@ export function TextEditor({
         mousedown: () => false,
         contextmenu: (view, event) => {
           const target = event.target as HTMLElement;
+
           // Check if right-click was on a table cell or header
           if (target.tagName === "TD" || target.tagName === "TH" || target.closest("td, th")) {
             event.preventDefault();
@@ -106,7 +122,89 @@ export function TextEditor({
             setShowTableMenu(true);
             return true;
           }
-          return false;
+
+          // Check if right-click was on an image
+          if (target.tagName === "IMG") {
+            event.preventDefault();
+            setImageMenuPos({ x: event.clientX, y: event.clientY });
+            setShowImageMenu(true);
+            return true;
+          }
+
+          // Show editor context menu for other areas
+          event.preventDefault();
+          setEditorMenuPos({ x: event.clientX, y: event.clientY });
+          setShowEditorMenu(true);
+          return true;
+        },
+        drop: (view, event) => {
+          const hasFiles = event.dataTransfer?.files?.length;
+          if (!hasFiles) return false;
+
+          const images = Array.from(event.dataTransfer.files).filter((file) =>
+            file.type.startsWith("image/")
+          );
+
+          if (images.length === 0) return false;
+
+          event.preventDefault();
+
+          const { schema } = view.state;
+          const coordinates = view.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+
+          images.forEach(async (image) => {
+            try {
+              const url = await uploadImage(image);
+              const node = schema.nodes.resizableImage.create({
+                src: url,
+                alt: image.name,
+                height: "300px",
+              });
+
+              const transaction = view.state.tr.insert(coordinates?.pos || 0, node);
+              view.dispatch(transaction);
+            } catch (error) {
+              console.error("Failed to upload image:", error);
+            }
+          });
+
+          return true;
+        },
+        paste: (view, event) => {
+          const hasFiles = event.clipboardData?.files?.length;
+          if (!hasFiles) return false;
+
+          const images = Array.from(event.clipboardData.files).filter((file) =>
+            file.type.startsWith("image/")
+          );
+
+          if (images.length === 0) return false;
+
+          event.preventDefault();
+
+          const { schema } = view.state;
+          const { selection } = view.state;
+
+          images.forEach(async (image) => {
+            try {
+              const url = await uploadImage(image);
+              const node = schema.nodes.resizableImage.create({
+                src: url,
+                alt: "Pasted image",
+                height: "300px",
+              });
+
+              const transaction = view.state.tr.replaceSelectionWith(node);
+              view.dispatch(transaction);
+            } catch (error) {
+              console.error("Failed to upload image:", error);
+            }
+          });
+
+          return true;
         },
       },
     },
@@ -159,6 +257,34 @@ export function TextEditor({
           onClose={() => setShowTableMenu(false)}
         />
       )}
+
+      {/* Editor Context Menu */}
+      {showEditorMenu && editor && (
+        <EditorContextMenu
+          editor={editor as Editor}
+          x={editorMenuPos.x}
+          y={editorMenuPos.y}
+          onClose={() => setShowEditorMenu(false)}
+        />
+      )}
+
+      {/* Image Context Menu */}
+      {showImageMenu && editor && (
+        <ImageContextMenu
+          editor={editor as Editor}
+          x={imageMenuPos.x}
+          y={imageMenuPos.y}
+          onClose={() => setShowImageMenu(false)}
+        />
+      )}
+
+      {/* Hidden file input for image upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+      />
     </div>
   );
 }

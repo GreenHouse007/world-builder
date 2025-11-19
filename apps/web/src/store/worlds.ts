@@ -25,6 +25,7 @@ interface WorldsState {
 
   fetchWorlds: () => Promise<void>;
   createWorld: (name?: string, emoji?: string) => Promise<World | null>;
+  duplicateWorld: (worldId: string) => Promise<World | null>;
   renameWorld: (worldId: string, newName: string) => Promise<void>;
   deleteWorld: (worldId: string) => Promise<void>;
   setWorld: (id: string | null) => void;
@@ -93,6 +94,23 @@ export const useWorlds = create<WorldsState>((set, get) => ({
       return newWorld;
     } catch (err) {
       console.error("[WORLDS] create error:", err);
+      return null;
+    }
+  },
+
+  async duplicateWorld(worldId) {
+    if (import.meta.env.DEV) console.log("[WORLDS] duplicateWorld()", worldId);
+    try {
+      const duplicatedWorld = await api<World>(`/worlds/${worldId}/duplicate`, {
+        method: "POST",
+      });
+      set((state) => ({
+        worlds: [...state.worlds, duplicatedWorld],
+        currentWorldId: duplicatedWorld._id,
+      }));
+      return duplicatedWorld;
+    } catch (err) {
+      console.error("[WORLDS] duplicate error:", err);
       return null;
     }
   },
