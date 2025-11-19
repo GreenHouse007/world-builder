@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../store/auth";
 import { useWorlds } from "../../store/worlds";
 import { useAppStatus } from "../../store/appStatus";
+import { useTheme } from "../../store/theme";
 import { TopbarWorldMenu } from "./TopbarWorldMenu";
 import { ExportModal } from "../export/ExportModal";
 import { ShareWorldModal } from "../sharing/ShareWorldModal";
@@ -11,6 +12,7 @@ export function Topbar() {
   const { user, logout } = useAuth();
   const { worlds, currentWorldId, renameWorld } = useWorlds();
   const { isSaving, hasUnsavedChanges, isOffline, lastSavedAt } = useAppStatus();
+  const { interfaceTheme } = useTheme();
   const [showExport, setShowExport] = useState(false);
   const currentWorld = worlds.find((w) => w._id === currentWorldId) ?? null;
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -23,6 +25,16 @@ export function Topbar() {
     "\n  currentWorld:",
     currentWorld
   );
+
+  // Format the saved timestamp
+  const formatSavedTime = (isoString: string) => {
+    const date = new Date(isoString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${month}/${day} ${hours}:${minutes}`;
+  };
 
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(currentWorld?.name ?? "");
@@ -56,7 +68,11 @@ export function Topbar() {
 
   return (
     <header
-      className="w-full h-20 px-8 flex items-center bg-[#050814]/95 border-b border-white/5 backdrop-blur-xl relative"
+      className={`w-full h-20 px-8 flex items-center backdrop-blur-xl relative border-b ${
+        interfaceTheme === "dark"
+          ? "bg-[#050814]/95 border-white/5"
+          : "bg-white/95 border-gray-200 shadow-sm"
+      }`}
       onClick={() => menuOpen && setMenuOpen(false)}
     >
       {/* Left: brand pill */}
@@ -84,7 +100,9 @@ export function Topbar() {
             {editing ? (
               <input
                 autoFocus
-                className="bg-transparent outline-none border-none text-xl font-semibold text-slate-50 text-center px-3 py-1"
+                className={`bg-transparent outline-none border-none text-xl font-semibold text-center px-3 py-1 ${
+                  interfaceTheme === "dark" ? "text-slate-50" : "text-gray-900"
+                }`}
                 value={nameDraft}
                 onChange={(e) => setNameDraft(e.target.value)}
                 onBlur={commitRename}
@@ -105,7 +123,11 @@ export function Topbar() {
               <button
                 type="button"
                 onClick={handleWorldNameClick}
-                className="text-xl font-semibold text-slate-50 px-3 py-1 rounded-full hover:bg-white/5 transition"
+                className={`text-xl font-semibold px-3 py-1 rounded-full transition ${
+                  interfaceTheme === "dark"
+                    ? "text-slate-50 hover:bg-white/5"
+                    : "text-gray-900 hover:bg-gray-100"
+                }`}
               >
                 {currentWorld ? currentWorld.name : "Create your first world"}
               </button>
@@ -120,11 +142,21 @@ export function Topbar() {
               e.stopPropagation();
               setMenuOpen((v) => !v);
             }}
-            className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex flex-col items-center justify-center gap-[3px]"
+            className={`w-9 h-9 rounded-full flex flex-col items-center justify-center gap-[3px] ${
+              interfaceTheme === "dark"
+                ? "bg-white/5 hover:bg-white/10"
+                : "bg-gray-100 hover:bg-gray-200"
+            }`}
           >
-            <span className="w-6 h-[1.5px] bg-slate-200 rounded-full" />
-            <span className="w-3 h-[1.5px] bg-slate-200 rounded-full" />
-            <span className="w-4 h-[1.5px] bg-slate-200 rounded-full" />
+            <span className={`w-6 h-[1.5px] rounded-full ${
+              interfaceTheme === "dark" ? "bg-slate-200" : "bg-gray-700"
+            }`} />
+            <span className={`w-3 h-[1.5px] rounded-full ${
+              interfaceTheme === "dark" ? "bg-slate-200" : "bg-gray-700"
+            }`} />
+            <span className={`w-4 h-[1.5px] rounded-full ${
+              interfaceTheme === "dark" ? "bg-slate-200" : "bg-gray-700"
+            }`} />
           </button>
 
           {/* Worlds menu */}
@@ -144,12 +176,20 @@ export function Topbar() {
           className={
             "px-4 py-1.5 rounded-full border " +
             (isOffline
-              ? "bg-red-500/10 border-red-400/60 text-red-300"
+              ? interfaceTheme === "dark"
+                ? "bg-red-500/10 border-red-400/60 text-red-300"
+                : "bg-red-100 border-red-400 text-red-700"
               : isSaving
-              ? "bg-blue-500/10 border-blue-400/60 text-blue-300"
+              ? interfaceTheme === "dark"
+                ? "bg-blue-500/10 border-blue-400/60 text-blue-300"
+                : "bg-blue-100 border-blue-400 text-blue-700"
               : hasUnsavedChanges
-              ? "bg-amber-500/10 border-amber-400/60 text-amber-300"
-              : "bg-emerald-500/15 border-emerald-400/40 text-emerald-300")
+              ? interfaceTheme === "dark"
+                ? "bg-amber-500/10 border-amber-400/60 text-amber-300"
+                : "bg-amber-100 border-amber-400 text-amber-700"
+              : interfaceTheme === "dark"
+              ? "bg-emerald-500/15 border-emerald-400/40 text-emerald-300"
+              : "bg-emerald-100 border-emerald-400 text-emerald-700")
           }
         >
           {isOffline
@@ -159,13 +199,17 @@ export function Topbar() {
             : hasUnsavedChanges
             ? "Unsaved changes"
             : lastSavedAt
-            ? `Saved ${lastSavedAt}`
+            ? `Saved ${formatSavedTime(lastSavedAt)}`
             : "All changes saved"}
         </div>
 
         <button
           onClick={() => setShowExport(true)}
-          className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-200"
+          className={`px-4 py-1.5 rounded-full ${
+            interfaceTheme === "dark"
+              ? "bg-white/5 hover:bg-white/10 text-slate-200"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+          }`}
         >
           Export
         </button>
@@ -186,7 +230,11 @@ export function Topbar() {
         {user && (
           <button
             onClick={logout}
-            className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-200"
+            className={`px-4 py-1.5 rounded-full ${
+              interfaceTheme === "dark"
+                ? "bg-white/5 hover:bg-white/10 text-slate-200"
+                : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+            }`}
           >
             Sign out
           </button>

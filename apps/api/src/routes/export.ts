@@ -130,18 +130,22 @@ const PRINT_CSS = `
   }
   .cover__inner { text-align: center; }
   .cover .emoji { font-size: 64px; margin-bottom: 12px; }
-  .cover h1 { font-size: 28px; margin: 0 0 8px; }
+  .cover h1 { font-size: 28px; margin: 0 0 8px; color: #111 !important; }
   .cover .meta { color: #555; font-size: 12px; }
   .page { break-after: page; }
   .page:last-child { break-after: auto; }
-  h1 { font-size: 20px; margin: 0 0 10px; }
-  h2 { font-size: 16px; margin: 18px 0 8px; }
-  h3 { font-size: 14px; margin: 14px 0 6px; }
-  p { margin: 8px 0; }
+  h1 { font-size: 20px; margin: 0 0 10px; color: #111 !important; }
+  h2 { font-size: 16px; margin: 18px 0 8px; color: #111 !important; }
+  h3 { font-size: 14px; margin: 14px 0 6px; color: #111 !important; }
+  p { margin: 8px 0; color: #111 !important; }
+  li { color: #111 !important; }
+  strong { color: #111 !important; }
+  em { color: #111 !important; }
+  code { color: #111 !important; }
   .content table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-  .content th, .content td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; }
+  .content th, .content td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; color: #111 !important; }
   .content th { background: #f5f5f5; text-align: left; }
   .content ul, .content ol { margin: 8px 0 8px 20px; }
-  blockquote { border-left: 3px solid #ccc; padding-left: 10px; color: #555; margin: 10px 0; }
+  blockquote { border-left: 3px solid #ccc; padding-left: 10px; color: #555 !important; margin: 10px 0; }
   hr { border: 0; border-top: 1px solid #ddd; margin: 14px 0; }
 `;

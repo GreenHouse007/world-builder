@@ -5,12 +5,19 @@ import { Sidebar } from "../components/layout/Sidebar";
 import { useAuth } from "../store/auth";
 import { useWorlds } from "../store/worlds";
 import { usePages } from "../store/pages";
+import { useTheme } from "../store/theme";
 import { AuthOverlay } from "../components/layout/AuthOverlay";
 
-function LoadingScreen() {
+function LoadingScreen({ theme }: { theme: "light" | "dark" }) {
   return (
-    <div className="min-h-screen bg-[#020309] text-slate-300 flex items-center justify-center">
-      <div className="px-5 py-3 rounded-xl border border-white/10 bg-white/5">
+    <div className={`min-h-screen flex items-center justify-center ${
+      theme === "dark" ? "bg-[#020309] text-slate-300" : "bg-gray-50 text-gray-700"
+    }`}>
+      <div className={`px-5 py-3 rounded-xl ${
+        theme === "dark"
+          ? "border border-white/10 bg-white/5"
+          : "border border-gray-300 bg-white shadow-lg"
+      }`}>
         Loading your worlds…
       </div>
     </div>
@@ -27,6 +34,7 @@ export default function AppLayout() {
     loading: worldsLoading,
   } = useWorlds();
   const { fetchPages } = usePages();
+  const { interfaceTheme } = useTheme();
 
   useEffect(() => {
     if (import.meta.env.DEV) console.log("[APP LAYOUT] user changed:", user);
@@ -54,11 +62,15 @@ export default function AppLayout() {
 
   // Bootstrapping
   if (authLoading || (user && worldsLoading && worlds.length === 0)) {
-    return <LoadingScreen />;
+    return <LoadingScreen theme={interfaceTheme} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#020309] text-slate-100 flex flex-col">
+    <div className={`min-h-screen flex flex-col ${
+      interfaceTheme === "dark"
+        ? "bg-[#020309] text-slate-100"
+        : "bg-gray-50 text-gray-900"
+    }`}>
       <Topbar />
       <div className="flex flex-1 gap-0 px-4 pb-4">
         <Sidebar />

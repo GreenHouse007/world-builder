@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePages } from "../../store/pages";
 import { useWorlds } from "../../store/worlds";
 import { useAppStatus } from "../../store/appStatus";
+import { useTheme } from "../../store/theme";
 import { api } from "../../services/http";
 import { TextEditor } from "../editor/TextEditor";
 
 function EditablePageTitle({ pageId, initialTitle }: { pageId: string; initialTitle: string }) {
   const { renamePage } = usePages();
+  const { interfaceTheme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +53,9 @@ function EditablePageTitle({ pageId, initialTitle }: { pageId: string; initialTi
         onChange={(e) => setTitle(e.target.value)}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
-        className="w-full text-3xl font-bold text-slate-100 bg-transparent border-b-2 border-purple-500 outline-none px-2 py-1"
+        className={`w-full text-3xl font-bold bg-transparent border-b-2 border-purple-500 outline-none px-2 py-1 ${
+          interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+        }`}
         autoFocus
       />
     );
@@ -60,7 +64,11 @@ function EditablePageTitle({ pageId, initialTitle }: { pageId: string; initialTi
   return (
     <h1
       onClick={() => setIsEditing(true)}
-      className="text-3xl font-bold text-slate-100 cursor-pointer hover:text-purple-300 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+      className={`text-3xl font-bold cursor-pointer transition-colors px-2 py-1 rounded-lg ${
+        interfaceTheme === "dark"
+          ? "text-slate-100 hover:text-purple-300 hover:bg-white/5"
+          : "text-gray-900 hover:text-purple-600 hover:bg-gray-100"
+      }`}
       title="Click to edit page title"
     >
       {title || "Untitled Page"}
@@ -201,8 +209,6 @@ export default function PageView() {
             key={currentPageId}
             initialContent={initial}
             onChange={handleChange}
-            onSaveStart={() => setSaving(true)}
-            onSaveEnd={() => setSaving(false)}
           />
         </div>
       )}

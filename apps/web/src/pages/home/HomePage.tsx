@@ -1,5 +1,6 @@
 import { usePages } from "../../store/pages";
 import { useWorlds } from "../../store/worlds";
+import { useTheme } from "../../store/theme";
 import { useEffect, useState } from "react";
 import { api } from "../../services/http";
 //import { PageEditor } from "../../components/editor/PageEditor";
@@ -29,6 +30,7 @@ interface ActivityEvent {
 function HomePage() {
   const { currentPageId, pages, setCurrentPage } = usePages();
   const { currentWorldId } = useWorlds();
+  const { interfaceTheme } = useTheme();
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [showAllActivities, setShowAllActivities] = useState(false);
 
@@ -139,14 +141,24 @@ function HomePage() {
     <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(260px,0.9fr)] gap-6 pt-6">
       {/* Left: main dashboard */}
       <section className="space-y-6">
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-xl">
-          <div className="text-[10px] font-semibold tracking-[0.2em] text-slate-500 uppercase">
+        <div className={`rounded-3xl p-6 shadow-xl ${
+          interfaceTheme === "dark"
+            ? "bg-white/5 border border-white/10"
+            : "bg-white border border-gray-200"
+        }`}>
+          <div className={`text-[10px] font-semibold tracking-[0.2em] uppercase ${
+            interfaceTheme === "dark" ? "text-slate-500" : "text-gray-500"
+          }`}>
             World Builder Overview
           </div>
-          <h2 className="mt-1 text-2xl font-semibold text-slate-100">
+          <h2 className={`mt-1 text-2xl font-semibold ${
+            interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+          }`}>
             Start by choosing a world and creating a page.
           </h2>
-          <p className="mt-2 text-sm text-slate-400 max-w-xl">
+          <p className={`mt-2 text-sm max-w-xl ${
+            interfaceTheme === "dark" ? "text-slate-400" : "text-gray-600"
+          }`}>
             Use the top bar to create or switch worlds. Then use the sidebar to
             add pages for locations, factions, timelines, magic systems, and
             more. Click a page on the left to open its rich editor here.
@@ -154,18 +166,34 @@ function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-xs">
-          <div className="bg-white/3 border border-white/8 rounded-3xl p-4">
-            <div className="font-medium text-slate-100">Infinite structure</div>
-            <p className="mt-1 text-slate-400">
+          <div className={`rounded-3xl p-4 ${
+            interfaceTheme === "dark"
+              ? "bg-white/3 border border-white/8"
+              : "bg-gray-50 border border-gray-200"
+          }`}>
+            <div className={`font-medium ${
+              interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+            }`}>Infinite structure</div>
+            <p className={`mt-1 ${
+              interfaceTheme === "dark" ? "text-slate-400" : "text-gray-600"
+            }`}>
               Nest pages for continents, regions, cities, characters, and scenes
               to keep your lore navigable.
             </p>
           </div>
-          <div className="bg-white/3 border border-indigo-500/40 rounded-3xl p-4">
-            <div className="font-medium text-slate-100">
+          <div className={`rounded-3xl p-4 ${
+            interfaceTheme === "dark"
+              ? "bg-white/3 border border-indigo-500/40"
+              : "bg-indigo-50 border border-indigo-200"
+          }`}>
+            <div className={`font-medium ${
+              interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+            }`}>
               Writing-first editor
             </div>
-            <p className="mt-1 text-slate-400">
+            <p className={`mt-1 ${
+              interfaceTheme === "dark" ? "text-slate-400" : "text-indigo-700"
+            }`}>
               Clean Tiptap editor with autosave so you can stay in flow while
               Enfield handles structure.
             </p>
@@ -174,13 +202,23 @@ function HomePage() {
 
         {/* Recent Activity Widget */}
         {activities.length > 0 && (
-          <div className="bg-white/3 border border-blue-500/30 rounded-3xl p-4 text-xs">
-            <div className="font-medium text-slate-100 flex items-center justify-between">
+          <div className={`rounded-3xl p-4 text-xs ${
+            interfaceTheme === "dark"
+              ? "bg-white/3 border border-blue-500/30"
+              : "bg-blue-50 border border-blue-200"
+          }`}>
+            <div className={`font-medium flex items-center justify-between ${
+              interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+            }`}>
               <span className="flex items-center gap-2">🕐 Recent Activity</span>
               {activities.length > 5 && (
                 <button
                   onClick={() => setShowAllActivities(!showAllActivities)}
-                  className="text-blue-400 hover:text-blue-300 text-[10px] px-2 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20 transition-colors"
+                  className={`text-[10px] px-2 py-1 rounded transition-colors ${
+                    interfaceTheme === "dark"
+                      ? "text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20"
+                      : "text-blue-700 hover:text-blue-800 bg-blue-100 hover:bg-blue-200"
+                  }`}
                 >
                   {showAllActivities ? 'Show Less' : `Show All (${activities.length})`}
                 </button>
@@ -197,24 +235,36 @@ function HomePage() {
                       <div className="hidden md:flex md:items-center md:gap-3 md:flex-wrap">
                         <span className={`font-medium ${actionColor} shrink-0`}>{action}</span>
                         {isDeleted ? (
-                          <span className="text-slate-400 line-through truncate">
+                          <span className={`line-through truncate ${
+                            interfaceTheme === "dark" ? "text-slate-400" : "text-gray-500"
+                          }`}>
                             {pageTitle}
                           </span>
                         ) : page ? (
                           <button
                             onClick={() => setCurrentPage(page._id)}
-                            className="text-slate-300 hover:text-blue-300 transition-colors truncate"
+                            className={`transition-colors truncate ${
+                              interfaceTheme === "dark"
+                                ? "text-slate-300 hover:text-blue-300"
+                                : "text-gray-700 hover:text-blue-600"
+                            }`}
                           >
                             {pageTitle}
                           </button>
                         ) : (
-                          <span className="text-slate-400 truncate">{pageTitle}</span>
+                          <span className={`truncate ${
+                            interfaceTheme === "dark" ? "text-slate-400" : "text-gray-500"
+                          }`}>{pageTitle}</span>
                         )}
                         {extraInfo && (
                           <span className="text-emerald-400 text-[10px] shrink-0">({extraInfo})</span>
                         )}
-                        <span className="text-slate-500 text-[10px] shrink-0">by {userName}</span>
-                        <span className="text-slate-500 text-[10px] shrink-0">• {formatRelativeTime(activity.createdAt)}</span>
+                        <span className={`text-[10px] shrink-0 ${
+                          interfaceTheme === "dark" ? "text-slate-500" : "text-gray-500"
+                        }`}>by {userName}</span>
+                        <span className={`text-[10px] shrink-0 ${
+                          interfaceTheme === "dark" ? "text-slate-500" : "text-gray-500"
+                        }`}>• {formatRelativeTime(activity.createdAt)}</span>
                       </div>
 
                       {/* Mobile: stacked layout */}
@@ -222,24 +272,34 @@ function HomePage() {
                         <div className="flex items-baseline gap-1.5 flex-wrap">
                           <span className={`font-medium ${actionColor}`}>{action}</span>
                           {isDeleted ? (
-                            <span className="text-slate-400 line-through truncate">
+                            <span className={`line-through truncate ${
+                              interfaceTheme === "dark" ? "text-slate-400" : "text-gray-500"
+                            }`}>
                               {pageTitle}
                             </span>
                           ) : page ? (
                             <button
                               onClick={() => setCurrentPage(page._id)}
-                              className="text-slate-300 hover:text-blue-300 transition-colors truncate"
+                              className={`transition-colors truncate ${
+                                interfaceTheme === "dark"
+                                  ? "text-slate-300 hover:text-blue-300"
+                                  : "text-gray-700 hover:text-blue-600"
+                              }`}
                             >
                               {pageTitle}
                             </button>
                           ) : (
-                            <span className="text-slate-400 truncate">{pageTitle}</span>
+                            <span className={`truncate ${
+                              interfaceTheme === "dark" ? "text-slate-400" : "text-gray-500"
+                            }`}>{pageTitle}</span>
                           )}
                           {extraInfo && (
                             <span className="text-emerald-400 text-[10px]">({extraInfo})</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500">
+                        <div className={`flex items-center gap-2 mt-0.5 text-[10px] ${
+                          interfaceTheme === "dark" ? "text-slate-500" : "text-gray-500"
+                        }`}>
                           <span>{userName}</span>
                           <span>•</span>
                           <span>{formatRelativeTime(activity.createdAt)}</span>
@@ -263,8 +323,14 @@ function HomePage() {
         <WorldSharingWidget />
 
         {/* Favorites widget */}
-        <div className="bg-white/3 border border-amber-500/30 rounded-3xl p-4">
-          <div className="font-medium text-slate-100 flex items-center gap-2">
+        <div className={`rounded-3xl p-4 ${
+          interfaceTheme === "dark"
+            ? "bg-white/3 border border-amber-500/30"
+            : "bg-amber-50 border border-amber-200"
+        }`}>
+          <div className={`font-medium flex items-center gap-2 ${
+            interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+          }`}>
             ⭐ Favorite Pages
           </div>
           {favoritePages.length > 0 ? (
@@ -273,7 +339,11 @@ function HomePage() {
                 <li key={page._id}>
                   <button
                     onClick={() => setCurrentPage(page._id)}
-                    className="text-slate-300 hover:text-amber-300 transition-colors text-left w-full truncate"
+                    className={`transition-colors text-left w-full truncate ${
+                      interfaceTheme === "dark"
+                        ? "text-slate-300 hover:text-amber-300"
+                        : "text-amber-900 hover:text-amber-700"
+                    }`}
                   >
                     {page.title}
                   </button>
@@ -281,24 +351,42 @@ function HomePage() {
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-slate-400">
+            <p className={`mt-2 ${
+              interfaceTheme === "dark" ? "text-slate-400" : "text-amber-700"
+            }`}>
               No favorites yet. Click the star next to any page in the sidebar to add it here.
             </p>
           )}
         </div>
 
-        <div className="bg-white/3 border border-white/8 rounded-3xl p-4">
-          <div className="font-medium text-slate-100">Quick tips</div>
-          <ul className="mt-2 space-y-1 text-slate-400">
+        <div className={`rounded-3xl p-4 ${
+          interfaceTheme === "dark"
+            ? "bg-white/3 border border-white/8"
+            : "bg-gray-50 border border-gray-200"
+        }`}>
+          <div className={`font-medium ${
+            interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+          }`}>Quick tips</div>
+          <ul className={`mt-2 space-y-1 ${
+            interfaceTheme === "dark" ? "text-slate-400" : "text-gray-600"
+          }`}>
             <li>🪐 Create a world from the top bar.</li>
             <li>📄 Add a page in the sidebar for that world.</li>
             <li>✏️ Click the page to open the editor here.</li>
           </ul>
         </div>
 
-        <div className="bg-white/3 border border-white/8 rounded-3xl p-4">
-          <div className="font-medium text-slate-100">Coming soon</div>
-          <ul className="mt-2 space-y-1 text-slate-400">
+        <div className={`rounded-3xl p-4 ${
+          interfaceTheme === "dark"
+            ? "bg-white/3 border border-white/8"
+            : "bg-gray-50 border border-gray-200"
+        }`}>
+          <div className={`font-medium ${
+            interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+          }`}>Coming soon</div>
+          <ul className={`mt-2 space-y-1 ${
+            interfaceTheme === "dark" ? "text-slate-400" : "text-gray-600"
+          }`}>
             <li>📚 Multi-document PDF exports.</li>
             <li>🔗 Linked references across worlds.</li>
             <li>💬 Real-time co-editing.</li>

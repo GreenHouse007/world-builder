@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import { useTheme } from "../../store/theme";
+import { convertColor } from "../../lib/colorPalette";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
@@ -52,6 +54,7 @@ export function TextEditor({
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [imageMenuPos, setImageMenuPos] = useState({ x: 0, y: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { editorTheme } = useTheme();
 
   const editor = useEditor({
     extensions: [
@@ -107,8 +110,11 @@ export function TextEditor({
     content: initialContent || "",
     editorProps: {
       attributes: {
-        class:
-          "prose prose-invert max-w-none focus:outline-none min-h-[48vh] leading-relaxed relative [&_table]:border-collapse [&_table]:border-slate-600 [&_th]:border [&_th]:border-slate-600 [&_th]:px-4 [&_th]:py-2 [&_td]:border [&_td]:border-slate-600 [&_td]:px-4 [&_td]:py-2",
+        class: `prose max-w-none focus:outline-none min-h-[48vh] leading-relaxed relative [&_table]:border-collapse [&_th]:border [&_th]:px-4 [&_th]:py-2 [&_td]:border [&_td]:px-4 [&_td]:py-2 ${
+          editorTheme === "dark"
+            ? "prose-invert [&_table]:border-slate-600 [&_th]:border-slate-600 [&_td]:border-slate-600 [&_p]:text-slate-200 [&_li]:text-slate-200 [&_h1]:text-slate-100 [&_h2]:text-slate-100 [&_h3]:text-slate-100"
+            : "prose-slate [&_table]:border-gray-300 [&_th]:border-gray-300 [&_td]:border-gray-300 [&_p]:text-gray-900 [&_li]:text-gray-900 [&_h1]:text-gray-900 [&_h2]:text-gray-900 [&_h3]:text-gray-900 [&_blockquote]:text-gray-900 [&_strong]:text-gray-900 [&_code]:text-gray-900"
+        }`,
       },
       handleDOMEvents: {
         mousedown: () => false,
@@ -232,19 +238,85 @@ export function TextEditor({
     setHtml(initialContent || "");
   }, [initialContent]);
 
+  // Track previous theme for color conversion
+  const prevThemeRef = useRef(editorTheme);
+
+  // Auto-convert colors when theme changes
+  useEffect(() => {
+    if (!editor) return;
+
+    const prevTheme = prevThemeRef.current;
+    const newTheme = editorTheme;
+
+    // Only convert if theme actually changed
+    if (prevTheme === newTheme) return;
+
+    // Update ref for next time
+    prevThemeRef.current = newTheme;
+
+    // Traverse the document and convert all text colors
+    const { state } = editor;
+    const { tr } = state;
+    let modified = false;
+
+    state.doc.descendants((node, pos) => {
+      // Check if node has text style marks with color
+      if (node.marks) {
+        node.marks.forEach((mark) => {
+          if (mark.type.name === "textStyle" && mark.attrs.color) {
+            const oldColor = mark.attrs.color;
+            const newColor = convertColor(oldColor, prevTheme, newTheme);
+
+            // Only update if color actually changed
+            if (newColor !== oldColor) {
+              tr.removeMark(pos, pos + node.nodeSize, mark.type);
+              tr.addMark(
+                pos,
+                pos + node.nodeSize,
+                mark.type.create({ ...mark.attrs, color: newColor })
+              );
+              modified = true;
+            }
+          }
+        });
+      }
+    });
+
+    // Apply the transaction if we made any changes
+    if (modified) {
+      editor.view.dispatch(tr);
+    }
+  }, [editor, editorTheme]);
+
   return (
-    <div className="w-full rounded-2xl border border-white/10 bg-[#070b12]">
-      <div className="border-b border-white/10 p-2">
+    <div className={`w-full rounded-2xl border ${
+      editorTheme === "dark"
+        ? "border-white/10 bg-[#070b12]"
+        : "border-gray-300 bg-white shadow-xl"
+    }`}>
+      <div className={`border-b p-2 ${
+        editorTheme === "dark"
+          ? "border-white/10"
+          : "border-gray-200"
+      }`}>
         <EditorToolbar editor={editor as Editor} />
       </div>
 
-      <div className="relative px-4 py-3">
+      <div className={`relative px-4 py-3 ${
+        editorTheme === "dark"
+          ? "prose-invert"
+          : "prose prose-slate"
+      }`}>
         {/* TODO: Fix BubbleMenu for Tiptap v3 */}
         {/* {editor && <EditorBubble editor={editor as Editor} />} */}
         <EditorContent editor={editor as Editor} />
       </div>
 
-      <div className="px-4 pb-3">
+      <div className={`px-4 pb-3 border-t ${
+        editorTheme === "dark"
+          ? "border-white/10"
+          : "border-gray-200"
+      }`}>
         <WordCountPanel html={html} />
       </div>
 

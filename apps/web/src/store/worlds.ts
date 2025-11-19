@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { api } from "../services/http";
 
 export interface World {
@@ -35,11 +36,13 @@ let fetchingWorlds = false; // single-flight
 let fetchTimer: ReturnType<typeof setTimeout> | null = null; // debounce
 const FETCH_DEBOUNCE_MS = 250;
 
-export const useWorlds = create<WorldsState>((set, get) => ({
-  worlds: [],
-  currentWorldId: null,
-  loading: false,
-  error: null,
+export const useWorlds = create<WorldsState>()(
+  persist(
+    (set, get) => ({
+      worlds: [],
+      currentWorldId: null,
+      loading: false,
+      error: null,
 
   async fetchWorlds() {
     // debounce
@@ -150,5 +153,30 @@ export const useWorlds = create<WorldsState>((set, get) => ({
   setWorld(id) {
     if (import.meta.env.DEV) console.log("[WORLDS] setWorld()", id);
     set({ currentWorldId: id });
+
+    // Update lastActivityAt for this world
+    if (id) {
+      const now = new Date().toISOString();
+      set((state) => ({
+        worlds: state.worlds.map((w) =>
+          w._id === id ? { ...w, lastActivityAt: now } : w
+        ),
+      }));
+
+      // Optionally sync with backend
+      api(`/worlds/${id}/activity`, {
+        method: "PATCH",
+        body: JSON.stringify({ lastActivityAt: now }),
+      }).catch((err) => {
+        if (import.meta.env.DEV)
+          console.log("[WORLDS] activity update skipped or failed:", err);
+      });
+    }
   },
-}));
+}),
+    {
+      name: "world-builder-worlds",
+      partialize: (state) => ({ currentWorldId: state.currentWorldId }),
+    }
+  )
+);

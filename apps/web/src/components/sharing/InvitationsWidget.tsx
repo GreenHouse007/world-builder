@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/http";
 import { useWorlds } from "../../store/worlds";
+import { useTheme } from "../../store/theme";
 
 interface Invitation {
   _id: string;
@@ -15,6 +16,7 @@ export function InvitationsWidget() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { fetchWorlds } = useWorlds();
+  const { interfaceTheme } = useTheme();
 
   // Fetch invitations on mount
   useEffect(() => {
@@ -83,22 +85,38 @@ export function InvitationsWidget() {
 
   if (isLoading) {
     return (
-      <div className="bg-white/3 border border-green-500/30 rounded-3xl p-4 text-xs">
-        <div className="font-medium text-slate-100 flex items-center gap-2">
+      <div className={`rounded-3xl p-4 text-xs ${
+        interfaceTheme === "dark"
+          ? "bg-white/3 border border-green-500/30"
+          : "bg-green-50 border border-green-200"
+      }`}>
+        <div className={`font-medium flex items-center gap-2 ${
+          interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+        }`}>
           📬 Pending Invitations
         </div>
-        <p className="mt-2 text-slate-400">Loading invitations...</p>
+        <p className={`mt-2 ${
+          interfaceTheme === "dark" ? "text-slate-400" : "text-green-700"
+        }`}>Loading invitations...</p>
       </div>
     );
   }
 
   if (invitations.length === 0) {
     return (
-      <div className="bg-white/3 border border-green-500/30 rounded-3xl p-4 text-xs">
-        <div className="font-medium text-slate-100 flex items-center gap-2">
+      <div className={`rounded-3xl p-4 text-xs ${
+        interfaceTheme === "dark"
+          ? "bg-white/3 border border-green-500/30"
+          : "bg-green-50 border border-green-200"
+      }`}>
+        <div className={`font-medium flex items-center gap-2 ${
+          interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+        }`}>
           📬 Pending Invitations
         </div>
-        <p className="mt-2 text-slate-400">
+        <p className={`mt-2 ${
+          interfaceTheme === "dark" ? "text-slate-400" : "text-green-700"
+        }`}>
           No pending invitations. When someone invites you to collaborate on a
           world, it will appear here.
         </p>
@@ -107,8 +125,14 @@ export function InvitationsWidget() {
   }
 
   return (
-    <div className="bg-white/3 border border-green-500/30 rounded-3xl p-4 text-xs">
-      <div className="font-medium text-slate-100 flex items-center gap-2">
+    <div className={`rounded-3xl p-4 text-xs ${
+      interfaceTheme === "dark"
+        ? "bg-white/3 border border-green-500/30"
+        : "bg-green-50 border border-green-200"
+    }`}>
+      <div className={`font-medium flex items-center gap-2 ${
+        interfaceTheme === "dark" ? "text-slate-100" : "text-gray-900"
+      }`}>
         📬 Pending Invitations ({invitations.length})
       </div>
 
@@ -116,26 +140,40 @@ export function InvitationsWidget() {
         {invitations.map((invite) => (
           <div
             key={invite._id}
-            className="bg-white/5 border border-white/10 rounded-lg p-3"
+            className={`rounded-lg p-3 ${
+              interfaceTheme === "dark"
+                ? "bg-white/5 border border-white/10"
+                : "bg-white border border-green-200"
+            }`}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-slate-200 truncate">
+                <div className={`font-medium truncate ${
+                  interfaceTheme === "dark" ? "text-slate-200" : "text-gray-900"
+                }`}>
                   {invite.worldName}
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1">
+                <div className={`text-[10px] mt-1 ${
+                  interfaceTheme === "dark" ? "text-slate-400" : "text-gray-600"
+                }`}>
                   From:{" "}
-                  <span className="text-slate-300">
+                  <span className={interfaceTheme === "dark" ? "text-slate-300" : "text-gray-900"}>
                     {invite.inviterEmail.split("@")[0]}
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 mt-0.5">
+                <div className={`text-[10px] mt-0.5 ${
+                  interfaceTheme === "dark" ? "text-slate-400" : "text-gray-600"
+                }`}>
                   Role:{" "}
-                  <span className="text-slate-300 capitalize">
+                  <span className={`capitalize ${
+                    interfaceTheme === "dark" ? "text-slate-300" : "text-gray-900"
+                  }`}>
                     {invite.role}
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
+                <div className={`text-[10px] mt-0.5 ${
+                  interfaceTheme === "dark" ? "text-slate-500" : "text-gray-500"
+                }`}>
                   {formatRelativeTime(invite.createdAt)}
                 </div>
               </div>
@@ -150,7 +188,11 @@ export function InvitationsWidget() {
               </button>
               <button
                 onClick={() => handleReject(invite._id)}
-                className="flex-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] transition-colors"
+                className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] transition-colors ${
+                  interfaceTheme === "dark"
+                    ? "bg-white/5 hover:bg-white/10 text-slate-300"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+                }`}
               >
                 Decline
               </button>

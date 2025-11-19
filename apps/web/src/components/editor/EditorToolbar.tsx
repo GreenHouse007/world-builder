@@ -2,8 +2,11 @@ import { useState, useRef } from "react";
 import type { Editor } from "@tiptap/react";
 import { TableInsertModal } from "./TableInsertModal";
 import { uploadImage } from "../../lib/imageUpload";
+import { useTheme } from "../../store/theme";
+import { getColorPickerColors } from "../../lib/colorPalette";
 
 export function EditorToolbar({ editor }: { editor: Editor | null }) {
+  const { editorTheme } = useTheme();
   const [showTableModal, setShowTableModal] = useState(false);
   const [showFontMenu, setShowFontMenu] = useState(false);
   const [showFontSizeMenu, setShowFontSizeMenu] = useState(false);
@@ -56,11 +59,8 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
   const fontSizes = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px", "36px"];
 
-  const colors = [
-    "#000000", "#FFFFFF", "#FF0000", "#00FF00", "#0000FF",
-    "#FFFF00", "#FF00FF", "#00FFFF", "#FFA500", "#800080",
-    "#FFC0CB", "#A52A2A", "#808080", "#008000", "#000080",
-  ];
+  // Get theme-aware colors for the color picker
+  const colors = getColorPickerColors(editorTheme);
 
   const lineHeights = [
     { name: "Single", value: "1" },
@@ -144,7 +144,9 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
         "px-2.5 py-1.5 rounded-lg text-sm transition-colors " +
         (active
           ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-          : "bg-white/5 hover:bg-white/10 text-slate-300 border border-transparent")
+          : editorTheme === "dark"
+          ? "bg-white/5 hover:bg-white/10 text-slate-300 border border-transparent"
+          : "bg-gray-100 hover:bg-gray-200 text-gray-900 border border-transparent")
       }
     >
       {icon || label}
@@ -166,12 +168,18 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
   }) => (
     <div className="relative flex flex-col">
       {topLabel && (
-        <span className="text-[10px] text-slate-400 mb-0.5 px-1">{topLabel}</span>
+        <span className={`text-[10px] mb-0.5 px-1 ${
+          editorTheme === "dark" ? "text-slate-400" : "text-gray-600"
+        }`}>{topLabel}</span>
       )}
       <button
         type="button"
         onClick={onToggle}
-        className="px-3 py-1.5 rounded-lg text-sm bg-white/5 hover:bg-white/10 text-slate-300 border border-transparent transition-colors flex items-center gap-1 min-w-[80px]"
+        className={`px-3 py-1.5 rounded-lg text-sm border border-transparent transition-colors flex items-center gap-1 min-w-[80px] ${
+          editorTheme === "dark"
+            ? "bg-white/5 hover:bg-white/10 text-slate-300"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+        }`}
       >
         <span className="flex-1 text-left truncate">{currentValue}</span>
         <span className="text-xs">▼</span>
@@ -190,7 +198,11 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
               setShowImageAlignMenu(false);
             }}
           />
-          <div className="absolute top-full left-0 mt-1 bg-[#0a0f1a] border border-white/10 rounded-lg shadow-xl z-20 min-w-[160px] max-h-[300px] overflow-y-auto">
+          <div className={`absolute top-full left-0 mt-1 rounded-lg shadow-xl z-20 min-w-[160px] max-h-[300px] overflow-y-auto ${
+            editorTheme === "dark"
+              ? "bg-[#0a0f1a] border border-white/10"
+              : "bg-white border border-gray-300"
+          }`}>
             {children}
           </div>
         </>
@@ -219,7 +231,11 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
               }
               setShowFontMenu(false);
             }}
-            className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+            className={`w-full text-left px-3 py-2 text-sm ${
+              editorTheme === "dark"
+                ? "hover:bg-white/10 text-slate-300"
+                : "hover:bg-gray-100 text-gray-900"
+            }`}
             style={{ fontFamily: font.value || undefined }}
           >
             {font.name}
@@ -242,7 +258,11 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
               editor.chain().focus().setFontSize(size).run();
               setShowFontSizeMenu(false);
             }}
-            className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300"
+            className={`w-full text-left px-3 py-2 text-sm ${
+              editorTheme === "dark"
+                ? "hover:bg-white/10 text-slate-300"
+                : "hover:bg-gray-100 text-gray-900"
+            }`}
           >
             {size}
           </button>

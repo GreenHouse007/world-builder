@@ -6,7 +6,7 @@ import { useAuth } from "../../store/auth";
 
 export function AuthOverlay() {
   const { user, loading: authLoading } = useAuth();
-  const [email, setEmail] = useState("adventurebyalex@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

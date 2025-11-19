@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { useTheme } from "../../store/theme";
 
 interface TableContextMenuProps {
   editor: Editor;
@@ -9,6 +10,7 @@ interface TableContextMenuProps {
 }
 
 export function TableContextMenu({ editor, x, y, onClose }: TableContextMenuProps) {
+  const { editorTheme } = useTheme();
   const [showColorPicker, setShowColorPicker] = useState(false);
 
   const colors = [
@@ -36,7 +38,11 @@ export function TableContextMenu({ editor, x, y, onClose }: TableContextMenuProp
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300 flex items-center justify-between"
+      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${
+        editorTheme === "dark"
+          ? "hover:bg-white/10 text-slate-300"
+          : "hover:bg-gray-100 text-gray-900"
+      }`}
     >
       <span>{label}</span>
       {submenu && <span className="text-xs">▶</span>}
@@ -50,7 +56,11 @@ export function TableContextMenu({ editor, x, y, onClose }: TableContextMenuProp
 
       {/* Context Menu */}
       <div
-        className="fixed bg-[#0a0f1a] border border-white/10 rounded-lg shadow-xl z-50 min-w-[200px]"
+        className={`fixed rounded-lg shadow-xl z-50 min-w-[200px] ${
+          editorTheme === "dark"
+            ? "bg-[#0a0f1a] border border-white/10"
+            : "bg-white border border-gray-300"
+        }`}
         style={{ top: y, left: x }}
       >
         {!showColorPicker ? (
@@ -69,7 +79,9 @@ export function TableContextMenu({ editor, x, y, onClose }: TableContextMenuProp
                 onClose();
               }}
             />
-            <div className="h-px bg-white/10 my-1" />
+            <div className={`h-px my-1 ${
+              editorTheme === "dark" ? "bg-white/10" : "bg-gray-200"
+            }`} />
             <MenuItem
               label="Add Column Left"
               onClick={() => {
@@ -84,7 +96,9 @@ export function TableContextMenu({ editor, x, y, onClose }: TableContextMenuProp
                 onClose();
               }}
             />
-            <div className="h-px bg-white/10 my-1" />
+            <div className={`h-px my-1 ${
+              editorTheme === "dark" ? "bg-white/10" : "bg-gray-200"
+            }`} />
             <MenuItem
               label="Delete Row"
               onClick={() => {
@@ -106,7 +120,9 @@ export function TableContextMenu({ editor, x, y, onClose }: TableContextMenuProp
                 onClose();
               }}
             />
-            <div className="h-px bg-white/10 my-1" />
+            <div className={`h-px my-1 ${
+              editorTheme === "dark" ? "bg-white/10" : "bg-gray-200"
+            }`} />
             <MenuItem
               label="Cell Background Color"
               onClick={() => setShowColorPicker(true)}
@@ -115,11 +131,17 @@ export function TableContextMenu({ editor, x, y, onClose }: TableContextMenuProp
           </>
         ) : (
           <>
-            <div className="p-2 border-b border-white/10">
+            <div className={`p-2 border-b ${
+              editorTheme === "dark" ? "border-white/10" : "border-gray-200"
+            }`}>
               <button
                 type="button"
                 onClick={() => setShowColorPicker(false)}
-                className="text-xs text-slate-400 hover:text-slate-300"
+                className={`text-xs ${
+                  editorTheme === "dark"
+                    ? "text-slate-400 hover:text-slate-300"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
               >
                 ← Back
               </button>
@@ -133,10 +155,16 @@ export function TableContextMenu({ editor, x, y, onClose }: TableContextMenuProp
                     editor.chain().focus().setCellAttribute("backgroundColor", color.value).run();
                     onClose();
                   }}
-                  className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300 flex items-center gap-2"
+                  className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 ${
+                    editorTheme === "dark"
+                      ? "hover:bg-white/10 text-slate-300"
+                      : "hover:bg-gray-100 text-gray-900"
+                  }`}
                 >
                   <div
-                    className="w-4 h-4 rounded border border-white/20"
+                    className={`w-4 h-4 rounded border ${
+                      editorTheme === "dark" ? "border-white/20" : "border-gray-300"
+                    }`}
                     style={{ backgroundColor: color.value }}
                   />
                   {color.name}

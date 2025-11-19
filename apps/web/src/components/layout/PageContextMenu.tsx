@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 interface Props {
   x: number;
   y: number;
+  interfaceTheme: "dark" | "light";
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -12,6 +13,7 @@ interface Props {
 export function PageContextMenu({
   x,
   y,
+  interfaceTheme,
   onRename,
   onDuplicate,
   onDelete,
@@ -32,10 +34,18 @@ export function PageContextMenu({
     <div
       ref={ref}
       style={{ top: y, left: x }}
-      className="fixed z-50 min-w-40 rounded-xl border border-white/10 bg-[#0a0f1a] shadow-2xl p-1"
+      className={`fixed z-[200] min-w-40 rounded-xl border shadow-2xl p-1 ${
+        interfaceTheme === "dark"
+          ? "border-white/10 bg-[#0a0f1a]"
+          : "border-gray-300 bg-white"
+      }`}
     >
       <button
-        className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+        className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+          interfaceTheme === "dark"
+            ? "hover:bg-white/5 text-slate-200"
+            : "hover:bg-gray-100 text-gray-900"
+        }`}
         onClick={() => {
           onRename();
           onClose();
@@ -44,7 +54,11 @@ export function PageContextMenu({
         Rename
       </button>
       <button
-        className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+        className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+          interfaceTheme === "dark"
+            ? "hover:bg-white/5 text-slate-200"
+            : "hover:bg-gray-100 text-gray-900"
+        }`}
         onClick={() => {
           onDuplicate();
           onClose();
@@ -53,7 +67,11 @@ export function PageContextMenu({
         Duplicate
       </button>
       <button
-        className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-500/10 text-sm text-red-300"
+        className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+          interfaceTheme === "dark"
+            ? "hover:bg-red-500/10 text-red-300"
+            : "hover:bg-red-100 text-red-700"
+        }`}
         onClick={() => {
           onDelete();
           onClose();

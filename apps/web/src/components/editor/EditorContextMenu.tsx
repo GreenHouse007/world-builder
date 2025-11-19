@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import type { Editor } from "@tiptap/react";
+import { useTheme } from "../../store/theme";
 import { uploadImage } from "../../lib/imageUpload";
 
 interface EditorContextMenuProps {
@@ -10,6 +11,7 @@ interface EditorContextMenuProps {
 }
 
 export function EditorContextMenu({ editor, x, y, onClose }: EditorContextMenuProps) {
+  const { editorTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,7 +54,11 @@ export function EditorContextMenu({ editor, x, y, onClose }: EditorContextMenuPr
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left px-3 py-2 hover:bg-white/10 text-sm text-slate-300 flex items-center justify-between"
+      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${
+        editorTheme === "dark"
+          ? "hover:bg-white/10 text-slate-300"
+          : "hover:bg-gray-100 text-gray-900"
+      }`}
     >
       <span>{label}</span>
     </button>
@@ -87,13 +93,19 @@ export function EditorContextMenu({ editor, x, y, onClose }: EditorContextMenuPr
 
       {/* Context Menu */}
       <div
-        className="fixed bg-[#0a0f1a] border border-white/10 rounded-lg shadow-xl z-50 min-w-[200px]"
+        className={`fixed rounded-lg shadow-xl z-50 min-w-[200px] ${
+          editorTheme === "dark"
+            ? "bg-[#0a0f1a] border border-white/10"
+            : "bg-white border border-gray-300"
+        }`}
         style={{ top: y, left: x }}
       >
         <MenuItem label="Copy" onClick={handleCopy} />
         <MenuItem label="Cut" onClick={handleCut} />
         <MenuItem label="Paste" onClick={handlePaste} />
-        <div className="h-px bg-white/10 my-1" />
+        <div className={`h-px my-1 ${
+          editorTheme === "dark" ? "bg-white/10" : "bg-gray-200"
+        }`} />
         <input
           ref={fileInputRef}
           type="file"
