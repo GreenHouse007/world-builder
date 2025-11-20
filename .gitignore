@@ -34,6 +34,8 @@ apps/api/src/**/*.js
 # local envs
 *.env
 *.env.local
+*.env.development
+*.env.production
 apps/api/firebase-service-account.json
 
 # OS/IDE
