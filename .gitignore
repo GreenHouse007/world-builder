@@ -32,10 +32,8 @@ turbo/
 apps/api/src/**/*.js
 
 # local envs
-*.env
 *.env.local
-*.env.development
-*.env.production
+apps/api/.env*
 apps/api/firebase-service-account.json
 
 # OS/IDE

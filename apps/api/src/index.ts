@@ -18,10 +18,12 @@ async function buildServer() {
   const app = Fastify({ logger: true });
 
   // ✅ CORS must be registered before routes & hooks
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : ["http://localhost:5173"];
+
   await app.register(cors, {
-    // In dev, you can keep this permissive. For prod, replace with an array like:
-    // origin: ["http://localhost:5173", "https://yourdomain.com"]
-    origin: true,
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ✅ allow PATCH
     allowedHeaders: ["Content-Type", "Authorization"], // ✅ allow bearer token
     credentials: true,
