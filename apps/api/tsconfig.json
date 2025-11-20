@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
     "types": ["node"],
     "strict": true,
     "moduleResolution": "node",

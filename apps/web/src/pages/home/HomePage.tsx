@@ -14,6 +14,7 @@ interface ActivityEvent {
   worldId: string;
   pageId: string | null;
   actorUid: string;
+  actorName?: string;
   type: string;
   meta: {
     title?: string;
@@ -118,10 +119,9 @@ function HomePage() {
         action = activity.type;
     }
 
-    // Get user name or email (fallback to UID)
-    const userName = activity.actorUid.includes('@')
-      ? activity.actorUid.split('@')[0]
-      : activity.actorUid;
+    // Get user name with proper fallbacks
+    const userName = activity.actorName
+      || (activity.actorUid.includes('@') ? activity.actorUid.split('@')[0] : activity.actorUid);
 
     return { icon, action, actionColor, pageTitle, isDeleted, page, extraInfo, userName };
   };

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Editor } from "@tiptap/react";
 import { TableInsertModal } from "./TableInsertModal";
 import { uploadImage } from "../../lib/imageUpload";
@@ -16,6 +16,26 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const [showImageAlignMenu, setShowImageAlignMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [, forceUpdate] = useState({});
+
+  // Force re-render when selection or content changes
+  useEffect(() => {
+    if (!editor) return;
+
+    // Force re-render to update toolbar state (colors, active formatting, etc.)
+    const handleUpdate = () => {
+      forceUpdate({});
+    };
+
+    // Listen to both selection and transaction updates
+    editor.on('selectionUpdate', handleUpdate);
+    editor.on('transaction', handleUpdate);
+
+    return () => {
+      editor.off('selectionUpdate', handleUpdate);
+      editor.off('transaction', handleUpdate);
+    };
+  }, [editor]);
 
   if (!editor) return null;
 
@@ -84,12 +104,12 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
   const getCurrentColor = () => {
     const color = editor.getAttributes("textStyle").color;
-    return color || "#FFFFFF";
+    return color; // Return actual color or undefined
   };
 
   const getCurrentHighlight = () => {
     const highlight = editor.getAttributes("highlight").color;
-    return highlight || "None";
+    return highlight; // Return actual color or undefined
   };
 
   const getCurrentAlign = () => {
@@ -156,12 +176,14 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
   const Dropdown = ({
     topLabel,
     currentValue,
+    customDisplay,
     isOpen,
     onToggle,
     children,
   }: {
     topLabel?: string;
     currentValue: string;
+    customDisplay?: React.ReactNode;
     isOpen: boolean;
     onToggle: () => void;
     children: React.ReactNode;
@@ -175,13 +197,15 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       <button
         type="button"
         onClick={onToggle}
-        className={`px-3 py-1.5 rounded-lg text-sm border border-transparent transition-colors flex items-center gap-1 min-w-[80px] ${
+        className={`px-3 py-1.5 rounded-lg text-sm border border-transparent transition-colors flex items-center gap-2 min-w-[80px] ${
           editorTheme === "dark"
             ? "bg-white/5 hover:bg-white/10 text-slate-300"
             : "bg-gray-100 hover:bg-gray-200 text-gray-900"
         }`}
       >
-        <span className="flex-1 text-left truncate">{currentValue}</span>
+        <span className="flex-1 text-left truncate flex items-center gap-2">
+          {customDisplay || currentValue}
+        </span>
         <span className="text-xs">▼</span>
       </button>
       {isOpen && (
@@ -209,6 +233,31 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       )}
     </div>
   );
+
+  const ColorSwatch = ({ color }: { color?: string }) => {
+    if (!color) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="w-4 h-4 flex-shrink-0" />
+          <span className={editorTheme === "dark" ? "text-slate-300" : "text-gray-900"}>
+            Default
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <span
+          className="w-4 h-4 rounded border-2 border-white/30 flex-shrink-0"
+          style={{ backgroundColor: color }}
+        />
+        <span className={editorTheme === "dark" ? "text-slate-300" : "text-gray-900"}>
+          Color
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2 p-2">
@@ -302,7 +351,8 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       {/* Text Color */}
       <Dropdown
         topLabel="Color"
-        currentValue={getCurrentColor()}
+        currentValue={getCurrentColor() || "Default"}
+        customDisplay={<ColorSwatch color={getCurrentColor()} />}
         isOpen={showColorPicker}
         onToggle={() => setShowColorPicker(!showColorPicker)}
       >
@@ -336,7 +386,8 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       {/* Highlight */}
       <Dropdown
         topLabel="Highlight"
-        currentValue={getCurrentHighlight()}
+        currentValue={getCurrentHighlight() || "None"}
+        customDisplay={<ColorSwatch color={getCurrentHighlight()} />}
         isOpen={showHighlightPicker}
         onToggle={() => setShowHighlightPicker(!showHighlightPicker)}
       >

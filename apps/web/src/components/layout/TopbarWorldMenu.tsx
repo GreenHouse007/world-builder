@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useWorlds } from "../../store/worlds";
 import { useTheme } from "../../store/theme";
+import { IconPickerModal } from "../ui/IconPickerModal";
 
 interface Props {
   onClose: () => void;
@@ -17,6 +18,7 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
     createWorld,
     duplicateWorld,
     renameWorld,
+    updateWorldIcon,
     deleteWorld,
   } = useWorlds();
   const { interfaceTheme } = useTheme();
@@ -85,16 +87,20 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
               }}
               title={w.name}
             >
-              {w.emoji ?? "🌍"} {w.name}
+              {w.emoji ? `${w.emoji} ` : ""}{w.name}
             </button>
             {/* inline 3-dots per world */}
             <div className="opacity-0 group-hover:opacity-100 transition">
               <WorldInlineMenu
                 interfaceTheme={interfaceTheme}
+                currentIcon={w.emoji}
                 onRename={async () => {
                   const name = prompt("Rename world", w.name);
                   if (name && name.trim() && name !== w.name)
                     await renameWorld(w._id, name.trim());
+                }}
+                onIcon={async (icon) => {
+                  await updateWorldIcon(w._id, icon);
                 }}
                 onDuplicate={async () => {
                   const clone = await duplicateWorld(w._id);
@@ -136,11 +142,11 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
               }`}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              onFocus={(e) => e.target.select()}
               onKeyDown={async (e) => {
                 if (e.key === "Enter") {
                   const w = await createWorld(
-                    draft.trim() || "New World",
-                    "🌍"
+                    draft.trim() || "New World"
                   );
                   if (w) setWorld(w._id);
                   setCreating(false);
@@ -152,7 +158,7 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
             <button
               className="px-3 py-2 rounded-lg bg-indigo-500 text-white text-sm"
               onClick={async () => {
-                const w = await createWorld(draft.trim() || "New World", "🌍");
+                const w = await createWorld(draft.trim() || "New World");
                 if (w) setWorld(w._id);
                 setCreating(false);
                 onClose();
@@ -168,7 +174,10 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
                 ? "bg-white/5 hover:bg-white/10 text-slate-100"
                 : "bg-gray-100 hover:bg-gray-200 text-gray-900"
             }`}
-            onClick={() => setCreating(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCreating(true);
+            }}
           >
             + New world
           </button>
@@ -181,18 +190,23 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
 
 function WorldInlineMenu({
   interfaceTheme,
+  currentIcon,
   onRename,
+  onIcon,
   onDuplicate,
   onShare,
   onDelete,
 }: {
   interfaceTheme: "dark" | "light";
+  currentIcon?: string;
   onRename: () => void;
+  onIcon: (icon: string) => void;
   onDuplicate: () => void;
   onShare: () => void;
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
@@ -271,6 +285,19 @@ function WorldInlineMenu({
                 ? "hover:bg-white/5 text-slate-200"
                 : "hover:bg-gray-100 text-gray-900"
             }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowIconPicker(true);
+            }}
+          >
+            Icon
+          </button>
+          <button
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+              interfaceTheme === "dark"
+                ? "hover:bg-white/5 text-slate-200"
+                : "hover:bg-gray-100 text-gray-900"
+            }`}
             onClick={() => {
               onDuplicate();
               setOpen(false);
@@ -306,6 +333,21 @@ function WorldInlineMenu({
           </button>
         </div>,
         document.body
+      )}
+      {showIconPicker && (
+        <IconPickerModal
+          currentIcon={currentIcon}
+          onSelect={(icon) => {
+            onIcon(icon);
+            setShowIconPicker(false);
+            setOpen(false);
+          }}
+          onClose={() => {
+            setShowIconPicker(false);
+            setOpen(false);
+          }}
+          interfaceTheme={interfaceTheme}
+        />
       )}
     </div>
   );

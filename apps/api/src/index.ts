@@ -62,6 +62,7 @@ async function buildServer() {
     (req as any).user = {
       uid: decoded.uid,
       email: decoded.email ?? undefined,
+      name: decoded.name ?? undefined,
     };
   });
 

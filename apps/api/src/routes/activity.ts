@@ -38,6 +38,7 @@ export const activityRoutes: FastifyPluginAsync = async (app) => {
       worldId: e.worldId.toString(),
       pageId: e.pageId ? e.pageId.toString() : null,
       actorUid: e.actorUid,
+      actorName: e.actorName,
       type: e.type,
       meta: e.meta,
       createdAt: e.createdAt,

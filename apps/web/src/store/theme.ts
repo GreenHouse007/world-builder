@@ -16,7 +16,7 @@ export const useTheme = create<ThemeState>()(
   persist(
     (set) => ({
       interfaceTheme: "dark",
-      editorTheme: "light",
+      editorTheme: "dark",
 
       setInterfaceTheme: (theme) => set({ interfaceTheme: theme }),
       setEditorTheme: (theme) => set({ editorTheme: theme }),

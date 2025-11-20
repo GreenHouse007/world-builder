@@ -57,6 +57,7 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
     const member: WorldMember = {
       uid,
       email: email || undefined,
+      displayName: req.user!.name || undefined,
       role: "owner",
       addedAt: now,
     };
@@ -65,7 +66,7 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
       _id: new ObjectId(),
       ownerUid: uid,
       name: name.trim(),
-      emoji: emoji || "🌍",
+      emoji: emoji || undefined,
       members: [member],
       stats: {
         pageCount: 0,
@@ -83,6 +84,7 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
       _id: new ObjectId(),
       worldId: doc._id,
       actorUid: uid,
+      actorName: req.user!.name || req.user!.email || 'User',
       type: "world_created",
       meta: { name: doc.name },
       createdAt: now,
@@ -133,9 +135,9 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
       update.name = name.trim();
       meta.name = { from: world.name, to: update.name };
     }
-    if (emoji && emoji !== world.emoji) {
-      update.emoji = emoji;
-      meta.emoji = { from: world.emoji, to: update.emoji };
+    if (emoji !== undefined && emoji !== world.emoji) {
+      update.emoji = emoji || undefined;
+      meta.emoji = { from: world.emoji, to: emoji };
     }
 
     if (!Object.keys(meta).length) {
@@ -148,6 +150,7 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
       _id: new ObjectId(),
       worldId: worldObjectId,
       actorUid: uid,
+      actorName: req.user!.name || req.user!.email || 'User',
       type: "world_updated",
       meta,
       createdAt: new Date(),
@@ -187,6 +190,7 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
     const ownerMember: WorldMember = {
       uid,
       email: email || undefined,
+      displayName: req.user!.name || undefined,
       role: "owner",
       addedAt: now,
     };
@@ -280,6 +284,7 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
       _id: new ObjectId(),
       worldId: newWorld._id,
       actorUid: uid,
+      actorName: req.user!.name || req.user!.email || 'User',
       type: "world_created",
       meta: {
         name: newWorld.name,
@@ -339,6 +344,7 @@ export const worldsRoutes: FastifyPluginAsync = async (app) => {
       _id: new ObjectId(),
       worldId: worldObjectId,
       actorUid: uid,
+      actorName: req.user!.name || req.user!.email || 'User',
       type: "world_deleted",
       meta: { pageCount: pageIds.length },
       createdAt: new Date(),

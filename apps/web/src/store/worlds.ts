@@ -28,6 +28,7 @@ interface WorldsState {
   createWorld: (name?: string, emoji?: string) => Promise<World | null>;
   duplicateWorld: (worldId: string) => Promise<World | null>;
   renameWorld: (worldId: string, newName: string) => Promise<void>;
+  updateWorldIcon: (worldId: string, icon: string) => Promise<void>;
   deleteWorld: (worldId: string) => Promise<void>;
   setWorld: (id: string | null) => void;
 }
@@ -83,7 +84,7 @@ export const useWorlds = create<WorldsState>()(
     });
   },
 
-  async createWorld(name = "New World", emoji = "🌍") {
+  async createWorld(name = "New World", emoji = "") {
     if (import.meta.env.DEV) console.log("[WORLDS] createWorld()", name);
     try {
       const newWorld = await api<World>("/worlds", {
@@ -131,6 +132,22 @@ export const useWorlds = create<WorldsState>()(
       }));
     } catch (err) {
       console.error("[WORLDS] rename error:", err);
+    }
+  },
+
+  async updateWorldIcon(worldId, icon) {
+    try {
+      await api(`/worlds/${worldId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ emoji: icon }),
+      });
+      set((state) => ({
+        worlds: state.worlds.map((w) =>
+          w._id === worldId ? { ...w, emoji: icon } : w
+        ),
+      }));
+    } catch (err) {
+      console.error("[WORLDS] icon update error:", err);
     }
   },
 

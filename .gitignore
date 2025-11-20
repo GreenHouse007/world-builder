@@ -29,6 +29,7 @@ dist/
 .cache/
 .out/
 turbo/
+apps/api/src/**/*.js
 
 # local envs
 *.env

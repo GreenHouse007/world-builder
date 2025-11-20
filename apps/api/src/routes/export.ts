@@ -63,7 +63,7 @@ export const exportRoutes: FastifyPluginAsync = async (app) => {
 <body>
   <div class="cover">
     <div class="cover__inner">
-      <div class="emoji">${esc(world.emoji ?? "🌍")}</div>
+      ${world.emoji ? `<div class="emoji">${esc(world.emoji)}</div>` : ""}
       <h1>${esc(world.name)}</h1>
       <div class="meta">Exported ${new Date().toLocaleString()}</div>
     </div>

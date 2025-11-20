@@ -22,7 +22,7 @@ export interface WorldDoc {
   _id: ObjectId;
   ownerUid: string;
   name: string;
-  emoji: string;
+  emoji?: string;
   members: WorldMember[];
   stats: WorldStats;
   createdAt: Date;
@@ -67,6 +67,7 @@ export interface WorldActivityDoc {
   worldId: ObjectId;
   pageId?: ObjectId;
   actorUid: string;
+  actorName?: string;
   type: string;
   meta: Record<string, unknown>;
   createdAt: Date;
