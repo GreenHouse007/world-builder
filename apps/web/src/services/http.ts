@@ -1,6 +1,7 @@
 // apps/web/src/services/http.ts
 import { getAuth } from "firebase/auth";
 import { useAuth } from "../store/auth";
+import { useAppStatus } from "../store/appStatus";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -35,34 +36,49 @@ export async function api<T>(
 
   console.log("[API] Sending request to", `${API_URL}${path}`);
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(options.headers || {}),
-      Authorization: `Bearer ${idToken}`,
-    },
-  });
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(options.headers || {}),
+        Authorization: `Bearer ${idToken}`,
+      },
+    });
 
-  console.log("[API] Response status:", res.status);
+    console.log("[API] Response status:", res.status);
 
-  // Handle expired/invalid token -> log out so overlay shows
-  if (res.status === 401 || res.status === 403) {
-    console.warn("[API] Auth error, signing out to recover...");
-    try {
-      await getAuth().signOut();
-    } catch (e) {
-      console.error("[API] signOut error", e);
+    // Backend is reachable, mark as online
+    const { setOffline } = useAppStatus.getState();
+    setOffline(false);
+
+    // Handle expired/invalid token -> log out so overlay shows
+    if (res.status === 401 || res.status === 403) {
+      console.warn("[API] Auth error, signing out to recover...");
+      try {
+        await getAuth().signOut();
+      } catch (e) {
+        console.error("[API] signOut error", e);
+      }
     }
-  }
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    console.error("[API] ❌ Error response:", res.status, text);
-    throw new Error(text || `Request failed: ${res.status}`);
-  }
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("[API] ❌ Error response:", res.status, text);
+      throw new Error(text || `Request failed: ${res.status}`);
+    }
 
-  const json = await res.json();
-  console.log("[API] ✅ Success:", path, json);
-  return json as T;
+    const json = await res.json();
+    console.log("[API] ✅ Success:", path, json);
+    return json as T;
+  } catch (error) {
+    // Network error or backend unreachable
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      console.error("[API] ❌ Backend unreachable - network error");
+      const { setOffline } = useAppStatus.getState();
+      setOffline(true);
+      throw new Error("Backend server is currently unavailable. Please try again later.");
+    }
+    throw error;
+  }
 }

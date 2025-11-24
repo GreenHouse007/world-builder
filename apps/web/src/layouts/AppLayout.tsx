@@ -7,6 +7,7 @@ import { useWorlds } from "../store/worlds";
 import { usePages } from "../store/pages";
 import { useTheme } from "../store/theme";
 import { AuthOverlay } from "../components/layout/AuthOverlay";
+import { BackendStatusBanner } from "../components/layout/BackendStatusBanner";
 
 function LoadingScreen({ theme }: { theme: "light" | "dark" }) {
   return (
@@ -71,6 +72,7 @@ export default function AppLayout() {
         ? "bg-[#020309] text-slate-100"
         : "bg-gray-50 text-gray-900"
     }`}>
+      <BackendStatusBanner />
       <Topbar />
       <div className="flex flex-1 gap-0 px-4 pb-4">
         <Sidebar />
