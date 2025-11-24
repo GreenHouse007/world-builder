@@ -5,7 +5,7 @@ import {
   ObjectId,
   type WorldDoc,
   type WorldMember,
-} from "../db";
+} from "../db.js";
 
 export const worldsRoutes: FastifyPluginAsync = async (app) => {
   const { Worlds, Pages, PageContent, Favorites, WorldActivity } =

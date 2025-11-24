@@ -3,16 +3,16 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import "dotenv/config";
-import { initFirebase, verifyBearer } from "./auth";
-import { initDb } from "./db";
-import { healthRoutes } from "./routes/health";
-import { worldsRoutes } from "./routes/worlds";
-import { pagesRoutes } from "./routes/pages";
-import { favoritesRoutes } from "./routes/favorites";
-import { activityRoutes } from "./routes/activity";
-import { exportRoutes } from "./routes/export";
-import { invitationsRoutes } from "./routes/invitations";
-import { uploadRoutes } from "./routes/upload";
+import { initFirebase, verifyBearer } from "./auth.js";
+import { initDb } from "./db.js";
+import { healthRoutes } from "./routes/health.js";
+import { worldsRoutes } from "./routes/worlds.js";
+import { pagesRoutes } from "./routes/pages.js";
+import { favoritesRoutes } from "./routes/favorites.js";
+import { activityRoutes } from "./routes/activity.js";
+import { exportRoutes } from "./routes/export.js";
+import { invitationsRoutes } from "./routes/invitations.js";
+import { uploadRoutes } from "./routes/upload.js";
 
 async function buildServer() {
   const app = Fastify({ logger: true });

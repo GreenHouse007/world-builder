@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { chromium } from "playwright";
-import { getCollections, ObjectId } from "../db";
+import { getCollections, ObjectId } from "../db.js";
 
 export const exportRoutes: FastifyPluginAsync = async (app) => {
   const { Worlds, Pages, PageContent } = getCollections();

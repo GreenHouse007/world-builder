@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getCollections, ObjectId, type PageDoc, type WorldDoc } from "../db";
+import { getCollections, ObjectId, type PageDoc, type WorldDoc } from "../db.js";
 
 export const pagesRoutes: FastifyPluginAsync = async (app) => {
   const { Worlds, Pages, PageContent, Favorites, WorldActivity } =

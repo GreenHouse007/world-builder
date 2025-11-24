@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getCollections, ObjectId } from "../db";
+import { getCollections, ObjectId } from "../db.js";
 
 export const activityRoutes: FastifyPluginAsync = async (app) => {
   const { Worlds, WorldActivity } = getCollections();
