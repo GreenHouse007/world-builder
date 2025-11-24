@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, googleProvider } from "../../lib/firebase";
 import { useAuth } from "../../store/auth";
+import { BackendStatusBanner } from "./BackendStatusBanner";
 
 export function AuthOverlay() {
   const { user, loading: authLoading } = useAuth();
@@ -48,6 +49,7 @@ export function AuthOverlay() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02030a]">
+      <BackendStatusBanner />
       <div className="w-[92%] max-w-6xl bg-gradient-to-br from-[#050716] to-[#040816] rounded-3xl p-10 flex gap-10 shadow-2xl border border-white/5">
         {/* Left: marketing */}
         <div className="flex-1 space-y-6 text-slate-100">
