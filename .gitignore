@@ -31,12 +31,19 @@ dist/
 turbo/
 apps/api/src/**/*.js
 
-# local envs
-*.env.local
-*.env.development
-*.env.production
-*.env
+# local envs (keep .env.example files)
+.env
+.env.local
+.env.development
+.env.production
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
 apps/api/.env*
+!apps/api/.env.example
+apps/web/.env*
+!apps/web/.env.example
 apps/api/firebase-service-account.json
 
 # OS/IDE
