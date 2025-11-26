@@ -3,7 +3,9 @@ import { useAuth } from "../../store/auth";
 import { useWorlds } from "../../store/worlds";
 import { usePages } from "../../store/pages";
 import { useTheme } from "../../store/theme";
+import { useUI } from "../../store/ui";
 import { DndTree } from "./DndTree";
+import { ExportModal } from "../export/ExportModal";
 
 /** Match the type used in DndTree */
 type PageNode = {
@@ -14,12 +16,14 @@ type PageNode = {
 };
 
 export function Sidebar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { currentWorldId } = useWorlds();
   const { tree, loading, fetchPages, createPage } = usePages();
   const { interfaceTheme } = useTheme();
+  const { isMobileSidebarOpen, setMobileSidebarOpen } = useUI();
 
   const [query, setQuery] = useState("");
+  const [showExport, setShowExport] = useState(false);
 
   useEffect(() => {
     if (currentWorldId) void fetchPages(currentWorldId);
@@ -53,15 +57,45 @@ export function Sidebar() {
   const disabled = !currentWorldId;
 
   return (
-    <aside className={`w-96 border-r p-3 flex flex-col gap-3 ${
-      interfaceTheme === "dark"
-        ? "border-white/5 bg-[#050814]/60 backdrop-blur-xl"
-        : "border-gray-200 bg-white/80 backdrop-blur-xl shadow-sm"
-    }`}>
+    <>
+      {/* Mobile overlay backdrop */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:relative inset-y-0 left-0 z-50 w-80 lg:w-96
+        transition-transform duration-300 ease-in-out
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        border-r p-3 flex flex-col gap-3
+        ${interfaceTheme === "dark"
+          ? "border-white/5 bg-[#050814] backdrop-blur-xl"
+          : "border-gray-200 bg-white backdrop-blur-xl shadow-sm"
+        }
+      `}>
+      {/* Mobile close button */}
+      <button
+        className={`lg:hidden self-end p-2 rounded-lg ${
+          interfaceTheme === "dark"
+            ? "text-slate-400 hover:bg-white/10"
+            : "text-gray-600 hover:bg-gray-100"
+        }`}
+        onClick={() => setMobileSidebarOpen(false)}
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
       {/* User card */}
       <button
         onClick={() => {
           usePages.getState().setCurrentPage("settings");
+          setMobileSidebarOpen(false);
         }}
         className={`w-full rounded-2xl border p-3 transition-colors text-left ${
           interfaceTheme === "dark"
@@ -89,10 +123,43 @@ export function Sidebar() {
         }`}
         onClick={() => {
           usePages.getState().setCurrentPage(null);
+          setMobileSidebarOpen(false);
         }}
       >
         🏠 Dashboard
       </button>
+
+      {/* Mobile-only Export & Sign Out buttons */}
+      <div className="md:hidden flex gap-2">
+        <button
+          onClick={() => {
+            setShowExport(true);
+            setMobileSidebarOpen(false);
+          }}
+          className={`flex-1 rounded-xl px-3 py-2 text-sm transition-colors ${
+            interfaceTheme === "dark"
+              ? "bg-white/5 hover:bg-white/10 text-slate-200"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+          }`}
+        >
+          📤 Export
+        </button>
+        <button
+          onClick={() => {
+            logout();
+            setMobileSidebarOpen(false);
+          }}
+          className={`flex-1 rounded-xl px-3 py-2 text-sm transition-colors ${
+            interfaceTheme === "dark"
+              ? "bg-white/5 hover:bg-white/10 text-slate-200"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+          }`}
+        >
+          🚪 Sign Out
+        </button>
+      </div>
+
+      {showExport && <ExportModal onClose={() => setShowExport(false)} />}
 
       {/* Pages header: label + search + + */}
       <div className="mt-1">
@@ -184,6 +251,7 @@ export function Sidebar() {
         Autosave is on.
       </div>
     </aside>
+    </>
   );
 }
 

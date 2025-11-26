@@ -107,9 +107,9 @@ export default function UserSettings() {
   const totalPages = pages.length;
 
   return (
-    <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(260px,0.9fr)] gap-6 pt-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(260px,0.9fr)] gap-4 md:gap-6 pt-4 md:pt-6">
       {/* Left: Main settings */}
-      <section className="space-y-6">
+      <section className="space-y-4 md:space-y-6">
         {/* Profile Section */}
         <div className={`rounded-3xl p-6 shadow-xl ${
           interfaceTheme === "dark"

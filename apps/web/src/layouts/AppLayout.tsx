@@ -74,9 +74,9 @@ export default function AppLayout() {
     }`}>
       <BackendStatusBanner />
       <Topbar />
-      <div className="flex flex-1 gap-0 px-4 pb-4">
+      <div className="flex flex-1 gap-0 px-2 md:px-4 pb-2 md:pb-4">
         <Sidebar />
-        <main className="flex-1 pl-4">
+        <main className="flex-1 lg:pl-4">
           <Outlet />
         </main>
       </div>

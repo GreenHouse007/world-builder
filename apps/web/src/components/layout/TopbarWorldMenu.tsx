@@ -30,9 +30,25 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
   useEffect(() => {
     if (buttonRef?.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 320; // w-80
+      const viewportWidth = window.innerWidth;
+
+      // Calculate left position, keeping menu on screen
+      let leftPos = rect.right - menuWidth;
+
+      // If menu would go off left edge, align to left with padding
+      if (leftPos < 8) {
+        leftPos = 8;
+      }
+
+      // If menu would go off right edge, align to right with padding
+      if (leftPos + menuWidth > viewportWidth - 8) {
+        leftPos = viewportWidth - menuWidth - 8;
+      }
+
       setPosition({
         top: rect.bottom + 8,
-        left: rect.right - 320, // 320px is menu width (w-80)
+        left: Math.max(8, leftPos),
       });
       setIsPositioned(true);
     }

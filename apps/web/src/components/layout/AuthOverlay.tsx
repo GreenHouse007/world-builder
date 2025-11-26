@@ -48,28 +48,28 @@ export function AuthOverlay() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02030a]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02030a] p-4">
       <BackendStatusBanner />
-      <div className="w-[92%] max-w-6xl bg-gradient-to-br from-[#050716] to-[#040816] rounded-3xl p-10 flex gap-10 shadow-2xl border border-white/5">
+      <div className="w-full max-w-6xl bg-gradient-to-br from-[#050716] to-[#040816] rounded-2xl md:rounded-3xl p-6 md:p-10 flex flex-col md:flex-row gap-6 md:gap-10 shadow-2xl border border-white/5 max-h-[90vh] overflow-y-auto">
         {/* Left: marketing */}
-        <div className="flex-1 space-y-6 text-slate-100">
+        <div className="flex-1 space-y-4 md:space-y-6 text-slate-100">
           <div className="text-xs tracking-[0.2em] text-slate-400 uppercase">
             Enfield
           </div>
-          <h1 className="text-4xl font-semibold leading-tight">
+          <h1 className="text-2xl md:text-4xl font-semibold leading-tight">
             Build immersive universes
             <span className="block text-indigo-400">
               with clarity and poetic focus.
             </span>
           </h1>
-          <p className="text-slate-400 text-sm max-w-xl">
+          <p className="text-slate-400 text-xs md:text-sm max-w-xl">
             Sign in to unlock nested worlds, autosave, exports, and a focused
             writing space for your campaigns and epics.
           </p>
         </div>
 
         {/* Right: auth card */}
-        <div className="w-[340px] bg-[#050818] rounded-3xl p-6 border border-white/8 flex flex-col justify-between">
+        <div className="w-full md:w-[340px] bg-[#050818] rounded-2xl md:rounded-3xl p-5 md:p-6 border border-white/8 flex flex-col justify-between">
           <div>
             <div className="text-sm font-medium text-slate-200">
               Sign in to continue

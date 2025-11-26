@@ -4,6 +4,7 @@ import { useAuth } from "../../store/auth";
 import { useWorlds } from "../../store/worlds";
 import { useAppStatus } from "../../store/appStatus";
 import { useTheme } from "../../store/theme";
+import { useUI } from "../../store/ui";
 import { TopbarWorldMenu } from "./TopbarWorldMenu";
 import { ExportModal } from "../export/ExportModal";
 import { ShareWorldModal } from "../sharing/ShareWorldModal";
@@ -13,6 +14,7 @@ export function Topbar() {
   const { worlds, currentWorldId, renameWorld } = useWorlds();
   const { isSaving, hasUnsavedChanges, isOffline, lastSavedAt } = useAppStatus();
   const { interfaceTheme } = useTheme();
+  const { toggleMobileSidebar } = useUI();
   const [showExport, setShowExport] = useState(false);
   const currentWorld = worlds.find((w) => w._id === currentWorldId) ?? null;
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -68,20 +70,34 @@ export function Topbar() {
 
   return (
     <header
-      className={`w-full h-20 px-8 flex items-center backdrop-blur-xl relative border-b ${
+      className={`w-full h-16 md:h-20 px-3 md:px-8 flex items-center backdrop-blur-xl relative border-b ${
         interfaceTheme === "dark"
           ? "bg-[#050814]/95 border-white/5"
           : "bg-white/95 border-gray-200 shadow-sm"
       }`}
       onClick={() => menuOpen && setMenuOpen(false)}
     >
-      {/* Left: brand pill */}
-      <div className="flex items-center gap-3">
-        <div className="h-10 px-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center gap-2 shadow-lg">
-          <div className="w-7 h-7 rounded-2xl bg-white/15 flex items-center justify-center text-indigo-100 text-lg font-semibold">
+      {/* Left: hamburger menu (mobile) + brand pill */}
+      <div className="flex items-center gap-2 md:gap-3">
+        {/* Mobile menu button */}
+        <button
+          onClick={toggleMobileSidebar}
+          className={`lg:hidden w-9 h-9 flex items-center justify-center rounded-lg ${
+            interfaceTheme === "dark"
+              ? "hover:bg-white/10"
+              : "hover:bg-gray-100"
+          }`}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        {/* Brand - hide text on mobile */}
+        <div className="h-9 md:h-10 px-3 md:px-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center gap-2 shadow-lg">
+          <div className="w-6 h-6 md:w-7 md:h-7 rounded-2xl bg-white/15 flex items-center justify-center text-indigo-100 text-base md:text-lg font-semibold">
             e
           </div>
-          <div className="flex flex-col leading-tight">
+          <div className="hidden sm:flex flex-col leading-tight">
             <span className="text-[9px] tracking-[0.22em] uppercase text-indigo-100/70">
               Enfield
             </span>
@@ -94,13 +110,13 @@ export function Topbar() {
 
       {/* Center: world title + hamburger */}
       <div className="flex-1 flex items-center justify-center pointer-events-none">
-        <div className="relative flex items-center gap-3 pointer-events-auto">
+        <div className="relative flex items-center gap-2 md:gap-3 pointer-events-auto">
           {/* World title */}
-          <div>
+          <div className="max-w-[150px] md:max-w-none">
             {editing ? (
               <input
                 autoFocus
-                className={`bg-transparent outline-none border-none text-xl font-semibold text-center px-3 py-1 ${
+                className={`bg-transparent outline-none border-none text-base md:text-xl font-semibold text-center px-2 md:px-3 py-1 w-full ${
                   interfaceTheme === "dark" ? "text-slate-50" : "text-gray-900"
                 }`}
                 value={nameDraft}
@@ -123,13 +139,14 @@ export function Topbar() {
               <button
                 type="button"
                 onClick={handleWorldNameClick}
-                className={`text-xl font-semibold px-3 py-1 rounded-full transition ${
+                className={`text-base md:text-xl font-semibold px-2 md:px-3 py-1 rounded-full transition truncate ${
                   interfaceTheme === "dark"
                     ? "text-slate-50 hover:bg-white/5"
                     : "text-gray-900 hover:bg-gray-100"
                 }`}
+                title={currentWorld ? currentWorld.name : "Create your first world"}
               >
-                {currentWorld ? currentWorld.name : "Create your first world"}
+                {currentWorld ? currentWorld.name : "Create world"}
               </button>
             )}
           </div>
@@ -171,10 +188,11 @@ export function Topbar() {
       </div>
 
       {/* Right: save indicator + sign out */}
-      <div className="flex items-center gap-3 text-[10px]">
+      <div className="flex items-center gap-2 md:gap-3 text-[10px]">
+        {/* Save status - show shorter text on mobile */}
         <div
           className={
-            "px-4 py-1.5 rounded-full border " +
+            "px-2 md:px-4 py-1.5 rounded-full border text-[9px] md:text-[10px] " +
             (isOffline
               ? interfaceTheme === "dark"
                 ? "bg-red-500/10 border-red-400/60 text-red-300"
@@ -192,20 +210,25 @@ export function Topbar() {
               : "bg-emerald-100 border-emerald-400 text-emerald-700")
           }
         >
-          {isOffline
-            ? "Offline"
-            : isSaving
-            ? "Saving…"
-            : hasUnsavedChanges
-            ? "Unsaved changes"
-            : lastSavedAt
-            ? `Saved ${formatSavedTime(lastSavedAt)}`
-            : "All changes saved"}
+          <span className="hidden md:inline">
+            {isOffline
+              ? "Offline"
+              : isSaving
+              ? "Saving…"
+              : hasUnsavedChanges
+              ? "Unsaved changes"
+              : lastSavedAt
+              ? `Saved ${formatSavedTime(lastSavedAt)}`
+              : "All changes saved"}
+          </span>
+          <span className="md:hidden">
+            {isOffline ? "○" : isSaving ? "•••" : hasUnsavedChanges ? "●" : "✓"}
+          </span>
         </div>
 
         <button
           onClick={() => setShowExport(true)}
-          className={`px-4 py-1.5 rounded-full ${
+          className={`hidden sm:block px-3 md:px-4 py-1.5 rounded-full ${
             interfaceTheme === "dark"
               ? "bg-white/5 hover:bg-white/10 text-slate-200"
               : "bg-gray-100 hover:bg-gray-200 text-gray-900"
@@ -230,7 +253,7 @@ export function Topbar() {
         {user && (
           <button
             onClick={logout}
-            className={`px-4 py-1.5 rounded-full ${
+            className={`hidden md:block px-3 md:px-4 py-1.5 rounded-full ${
               interfaceTheme === "dark"
                 ? "bg-white/5 hover:bg-white/10 text-slate-200"
                 : "bg-gray-100 hover:bg-gray-200 text-gray-900"

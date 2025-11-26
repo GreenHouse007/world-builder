@@ -138,9 +138,9 @@ function HomePage() {
 
   // Otherwise show the dashboard
   return (
-    <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(260px,0.9fr)] gap-6 pt-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(260px,0.9fr)] gap-4 md:gap-6 pt-4 md:pt-6">
       {/* Left: main dashboard */}
-      <section className="space-y-6">
+      <section className="space-y-4 md:space-y-6">
         <div className={`rounded-3xl p-6 shadow-xl ${
           interfaceTheme === "dark"
             ? "bg-white/5 border border-white/10"
@@ -165,7 +165,7 @@ function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className={`rounded-3xl p-4 ${
             interfaceTheme === "dark"
               ? "bg-white/3 border border-white/8"

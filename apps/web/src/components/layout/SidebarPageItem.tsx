@@ -4,6 +4,7 @@ import { PageContextMenu } from "./PageContextMenu";
 import { usePages } from "../../store/pages";
 import { useWorlds } from "../../store/worlds";
 import { useTheme } from "../../store/theme";
+import { useUI } from "../../store/ui";
 
 type PageNode = {
   _id: string;
@@ -26,6 +27,7 @@ export function SidebarPageItem({
   const editingPageId = usePages((s) => s.editingPageId);
   const { currentWorldId } = useWorlds();
   const { interfaceTheme } = useTheme();
+  const { setMobileSidebarOpen } = useUI();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(node.title);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -136,7 +138,10 @@ export function SidebarPageItem({
             className={`flex-1 text-left text-sm truncate p-0 m-0 ${
               interfaceTheme === "dark" ? "text-slate-200" : "text-gray-900"
             }`}
-            onClick={() => setCurrentPage(node._id)}
+            onClick={() => {
+              setCurrentPage(node._id);
+              setMobileSidebarOpen(false); // Close sidebar on mobile when page is selected
+            }}
             onDoubleClick={() => setEditing(true)}
             title={node.title}
           >
