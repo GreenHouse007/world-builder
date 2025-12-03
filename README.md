@@ -2,6 +2,12 @@
 
 A powerful tool for building detailed fictional worlds, game campaigns, and creative projects. Create nested documents with rich text editing, share your worlds with others, and keep everything organized in one place.
 
+## Live Demo
+
+Try it out: **[https://world-builder-frontend.onrender.com/](https://world-builder-frontend.onrender.com/)**
+
+> **Note:** The app is hosted on Render's free tier, so it may take 30-60 seconds to wake up on the first visit. Thanks for your patience!
+
 ![Dashboard](apps/web/public/Dashboard.png)
 
 ## What It Does
