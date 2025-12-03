@@ -1,146 +1,193 @@
 # Enfield World Builder
 
-A powerful, Notion-like documentation and world-building application with infinite nesting, rich text editing, and collaborative features. Build complex hierarchical documents for creative writing, game design, world-building, or knowledge management.
+A powerful tool for building detailed fictional worlds, game campaigns, and creative projects. Create nested documents with rich text editing, share your worlds with others, and keep everything organized in one place.
 
-## Overview
+![Dashboard](apps/web/public/Dashboard.png)
 
-Enfield is a modern full-stack document management system that combines the flexibility of Notion with specialized features for organizing complex, interconnected content. Whether you're building fictional worlds, managing project documentation, or organizing research, Enfield provides an intuitive interface for creating and navigating deeply nested document structures.
+## What It Does
+
+Enfield helps you organize complex creative projects like fantasy worlds, game campaigns, story wikis, or any interconnected documentation. Think of it as a specialized notebook where you can:
+
+- Create unlimited nested pages for locations, characters, timelines, and more
+- Write and format content with a clean, distraction-free editor
+- Share your worlds with collaborators and manage their permissions
+- Export your work to PDF
+- Never worry about losing progress with automatic saving
+
+![Text Editor](apps/web/public/TextEditor.png)
 
 ## Key Features
 
-- **Infinitely Nestable Documents** - Create unlimited document hierarchies with drag-and-drop organization
-- **Rich Text Editing** - Powerful Tiptap editor with Notion-like formatting and slash commands
-- **Multi-Workspace Support** - Organize different projects in separate workspaces
-- **Visual Drag-and-Drop** - Intuitive document reordering with real-time visual indicators
-- **Multi-Document PDF Export** - Export entire document trees to professionally formatted PDFs
-- **Auto-Save** - Never lose your work with debounced automatic saving
-- **Search & Favorites** - Quickly find and bookmark important documents
-- **Light & Dark Modes** - Comfortable editing in any lighting condition
+### Organization & Structure
+- **Infinite nesting** - Create pages within pages as deep as you need
+- **Drag-and-drop** - Reorganize your pages by dragging them around
+- **Custom icons** - Give each page a unique emoji or icon
+- **Favorites** - Star important pages for quick access
+- **Search & filter** - Find any page quickly
+
+### Rich Text Editor
+- **Full formatting** - Bold, italic, underline, colors, highlights, and more
+- **Lists & tables** - Organize information with bullet lists and tables
+- **Images** - Upload and embed images with Cloudinary
+- **Multiple fonts** - Choose from different font styles and sizes
+- **Text alignment** - Left, center, right, and justified text
+- **Slash commands** - Type "/" to quickly insert formatting
+
+### Collaboration & Sharing
+- **World sharing** - Invite others to view or edit your worlds
+- **Role management** - Choose who can edit (Editor) or manage everything (Admin)
+- **Email invitations** - Send invites directly from the app
+- **User accounts** - Sign in with email/password or Google
+
+### Other Features
+- **Auto-save** - Changes save automatically as you work
+- **Light & dark modes** - Switch themes based on your preference
+- **Export to PDF** - Save your pages as PDF documents
+- **Activity tracking** - See recent edits and changes
+- **Mobile responsive** - Works on phones and tablets
+
+![Login Page](apps/web/public/Login.png)
 
 ## Getting Started
 
-### Prerequisites
+### What You'll Need
 
-- Node.js 18+
-- pnpm 10+ (recommended) or npm
-- MongoDB Atlas account (or local MongoDB instance)
+- Node.js 18 or newer
+- pnpm 10+ (or npm)
+- A MongoDB database (free tier from MongoDB Atlas works great)
+- Firebase project (for authentication)
+- Cloudinary account (for image uploads)
 
-### Installation
+### Setup Instructions
 
-1. Clone the repository:
+1. **Clone the project**
 ```bash
-git clone https://github.com/yourusername/enfield.git
-cd enfield
+git clone https://github.com/yourusername/world-builder.git
+cd world-builder
 ```
 
-2. Install dependencies:
+2. **Install packages**
 ```bash
 pnpm install
 ```
 
-3. Set up environment variables:
+3. **Set up your services**
 
-Create `.env` files in both `apps/api` and `apps/web`:
-
-**apps/api/.env:**
+Create a `.env` file in the `apps/api` folder:
 ```
 MONGODB_URI=your_mongodb_connection_string
 PORT=3001
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+FIREBASE_PRIVATE_KEY=your_firebase_private_key
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 ```
 
-**apps/web/.env:**
+Create a `.env` file in the `apps/web` folder:
 ```
 VITE_API_URL=http://localhost:3001
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+VITE_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+VITE_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
 ```
 
-4. Start the development servers:
+4. **Start the app**
 ```bash
 pnpm dev
 ```
 
-The frontend will be available at `http://localhost:5173` and the API at `http://localhost:3001`.
+The app will open at `http://localhost:5173` with the API running at `http://localhost:3001`.
 
-### Running Individual Services
+### Running Parts Separately
 
 ```bash
-# Run only the web frontend
+# Just the frontend
 pnpm web
 
-# Run only the API backend
+# Just the backend
 pnpm api
 ```
 
-## Tech Stack
+## How It's Built
 
 ### Frontend
-- **React 18** with TypeScript 5
-- **Vite** - Lightning-fast build tool
-- **Tailwind CSS** - Utility-first styling
-- **Tiptap 2** - Extensible rich text editor
-- **React Router 6** - Client-side routing
-- **TanStack Query v5** - Server state management
-- **Zustand** - Lightweight state management
+- **React 19** - Modern UI framework
+- **TypeScript** - Type-safe code
+- **Vite** - Fast development and builds
+- **Tailwind CSS** - Easy styling
+- **Tiptap** - Rich text editor
+- **TanStack Router** - Page navigation
+- **TanStack Query** - Data fetching and caching
+- **Zustand** - Simple state management
+- **dnd-kit** - Drag and drop functionality
+- **Firebase** - User authentication
+- **Cloudinary** - Image hosting
 
 ### Backend
-- **Fastify 5** - High-performance Node.js framework
-- **MongoDB 6** - Document database with Atlas cloud hosting
-- **Puppeteer** - PDF generation engine
-- **dotenv** - Environment configuration
+- **Fastify** - Fast Node.js server
+- **MongoDB** - Database
+- **Firebase Admin** - Auth verification
+- **Playwright** - PDF generation
+- **Cloudinary** - Image management
 
-### Monorepo Architecture
-- **Turborepo** - Intelligent build system with caching
-- **pnpm workspaces** - Efficient package management
-- **Shared TypeScript types** - Type safety across frontend and backend
+### Project Organization
+- **Turborepo** - Manages the monorepo and builds
+- **pnpm workspaces** - Shared packages between frontend and backend
+- **Shared types** - TypeScript types used across the whole project
 
 ## Project Structure
 
 ```
-enfield/
+world-builder/
 ├── apps/
-│   ├── web/          # React frontend application
-│   └── api/          # Fastify backend API
+│   ├── web/              # React frontend
+│   │   ├── public/       # Static files and images
+│   │   └── src/          # Source code
+│   └── api/              # Fastify backend
+│       └── src/          # API code
 ├── packages/
-│   └── types/        # Shared TypeScript definitions
-└── turbo.json        # Turborepo configuration
+│   └── types/            # Shared TypeScript types
+└── turbo.json            # Monorepo configuration
 ```
 
-## Development
-
-### Building for Production
+## Building for Production
 
 ```bash
 pnpm build
 ```
 
-### Code Quality
+This builds both the frontend and backend for deployment.
 
-The project uses ESLint and Prettier for code quality and consistency. Configuration files are included in the repository.
+## Coming Soon
 
-## Roadmap
+Features we're planning to add:
 
-Planned features and improvements:
-
-- [ ] User authentication with Firebase Auth
-- [ ] Image uploads with cloud storage (S3/Cloudflare R2)
-- [ ] Real-time collaborative editing
-- [ ] Additional Tiptap extensions (tables, embeds, code blocks)
+- [ ] Multi-page PDF exports (export entire document trees)
+- [ ] Linked references (see which pages reference each other)
+- [ ] Real-time collaborative editing (see changes as others type)
+- [ ] Document templates (start new pages with pre-made structures)
+- [ ] Version history (view and restore previous versions)
 - [ ] Advanced search with filters
-- [ ] Document templates
-- [ ] Version history
-- [ ] Mobile-responsive design improvements
+- [ ] Block-level commenting
 
-## Deployment
+## Where to Deploy
 
-### Recommended Platforms
+Good hosting options for this app:
 
-- **Frontend**: Vercel or Netlify
-- **Backend**: Railway or Render
-- **Database**: MongoDB Atlas (cloud)
+- **Frontend**: Vercel, Netlify, or Cloudflare Pages
+- **Backend**: Railway, Render, or Fly.io
+- **Database**: MongoDB Atlas (cloud-hosted)
+- **Images**: Cloudinary
+- **Auth**: Firebase
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+Found a bug or want to add a feature? Feel free to open an issue or submit a pull request!
 
 ## License
 
-This project is licensed under the MIT License.
+This project is open source under the MIT License.

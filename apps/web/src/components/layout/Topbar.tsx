@@ -94,8 +94,8 @@ export function Topbar() {
         </button>
         {/* Brand - hide text on mobile */}
         <div className="h-9 md:h-10 px-3 md:px-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center gap-2 shadow-lg">
-          <div className="w-6 h-6 md:w-7 md:h-7 rounded-2xl bg-white/15 flex items-center justify-center text-indigo-100 text-base md:text-lg font-semibold">
-            e
+          <div className="w-6 h-6 md:w-7 md:h-7 rounded-2xl bg-white/15 flex items-center justify-center p-1">
+            <img src="/feather.svg" alt="Enfield Logo" className="w-full h-full object-contain" />
           </div>
           <div className="hidden sm:flex flex-col leading-tight">
             <span className="text-[9px] tracking-[0.22em] uppercase text-indigo-100/70">
