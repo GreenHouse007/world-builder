@@ -8,22 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const [inviteId, action] = params;
 
   if (!inviteId) {
-    // GET /api/invitations — list user's pending invitations
-    await withAuth(req, res, ["GET"], async (user, { WorldInvitations }) => {
-      const email = user.email;
-      const invites = await WorldInvitations.find({ inviteeEmail: email, status: "pending" })
-        .sort({ createdAt: -1 })
-        .toArray();
-
-      res.status(200).json(invites.map((inv) => ({
-        _id: inv._id.toString(),
-        worldId: inv.worldId.toString(),
-        worldName: inv.worldName,
-        inviterEmail: inv.inviterEmail,
-        role: inv.role,
-        createdAt: inv.createdAt,
-      })));
-    });
+    res.status(404).json({ error: "not found" });
     return;
   }
 
@@ -35,7 +20,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // POST /api/invitations/:inviteId/accept
   if (action === "accept") {
     await withAuth(req, res, ["POST"], async (user, { Worlds, WorldInvitations, WorldActivity }) => {
       const uid = user.uid;
@@ -47,7 +31,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (invite.status !== "pending") { res.status(400).json({ error: "invitation already responded to" }); return; }
 
       const now = new Date();
-
       await Worlds.updateOne(
         { _id: invite.worldId },
         {
@@ -66,7 +49,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
       await WorldInvitations.updateOne({ _id: inviteObjectId }, { $set: { status: "accepted", respondedAt: now } });
-
       await WorldActivity.insertOne({
         _id: new ObjectId(),
         worldId: invite.worldId,
@@ -82,7 +64,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // POST /api/invitations/:inviteId/reject
   if (action === "reject") {
     await withAuth(req, res, ["POST"], async (user, { WorldInvitations }) => {
       const email = user.email;
@@ -93,7 +74,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (invite.status !== "pending") { res.status(400).json({ error: "invitation already responded to" }); return; }
 
       await WorldInvitations.updateOne({ _id: inviteObjectId }, { $set: { status: "rejected", respondedAt: new Date() } });
-
       res.status(200).json({ ok: true });
     });
     return;
