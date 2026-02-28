@@ -103,35 +103,44 @@ export async function getCollections(): Promise<Collections> {
   const url = process.env.MONGO_URL;
   if (!url) throw new Error("MONGO_URL is not set");
 
-  if (!client) {
-    client = new MongoClient(url);
-    await client.connect();
+  try {
+    if (!client) {
+      client = new MongoClient(url);
+      await client.connect();
+    }
+
+    const dbName = process.env.MONGO_DB || "enfield";
+    const db = client.db(dbName);
+
+    const cols: Collections = {
+      Worlds: db.collection<WorldDoc>("worlds"),
+      Pages: db.collection<PageDoc>("pages"),
+      PageContent: db.collection<PageContentDoc>("page_content"),
+      Favorites: db.collection<FavoriteDoc>("favorites"),
+      WorldActivity: db.collection<WorldActivityDoc>("world_activity"),
+      WorldInvitations: db.collection<WorldInvitationDoc>("world_invitations"),
+    };
+
+    // Indexes (cheap if they already exist)
+    await Promise.all([
+      cols.Worlds.createIndex({ ownerUid: 1 }),
+      cols.Worlds.createIndex({ "members.uid": 1 }),
+      cols.Pages.createIndex({ worldId: 1, parentId: 1, position: 1 }),
+      cols.Pages.createIndex({ ownerUid: 1 }),
+      cols.PageContent.createIndex({ pageId: 1, ownerUid: 1 }),
+      cols.Favorites.createIndex({ uid: 1, worldId: 1 }),
+      cols.WorldActivity.createIndex({ worldId: 1, createdAt: -1 }),
+      cols.WorldInvitations.createIndex({ inviteeEmail: 1, status: 1 }),
+      cols.WorldInvitations.createIndex({ worldId: 1, inviteeEmail: 1 }),
+    ]);
+
+    collections = cols;
+    return collections;
+  } catch (err) {
+    // Reset so the next request retries the connection rather than using a
+    // broken client.
+    client = null;
+    collections = null;
+    throw err;
   }
-
-  const dbName = process.env.MONGO_DB || "enfield";
-  const db = client.db(dbName);
-
-  collections = {
-    Worlds: db.collection<WorldDoc>("worlds"),
-    Pages: db.collection<PageDoc>("pages"),
-    PageContent: db.collection<PageContentDoc>("page_content"),
-    Favorites: db.collection<FavoriteDoc>("favorites"),
-    WorldActivity: db.collection<WorldActivityDoc>("world_activity"),
-    WorldInvitations: db.collection<WorldInvitationDoc>("world_invitations"),
-  };
-
-  // Indexes (cheap if they already exist)
-  await Promise.all([
-    collections.Worlds.createIndex({ ownerUid: 1 }),
-    collections.Worlds.createIndex({ "members.uid": 1 }),
-    collections.Pages.createIndex({ worldId: 1, parentId: 1, position: 1 }),
-    collections.Pages.createIndex({ ownerUid: 1 }),
-    collections.PageContent.createIndex({ pageId: 1 }),
-    collections.Favorites.createIndex({ uid: 1, worldId: 1 }),
-    collections.WorldActivity.createIndex({ worldId: 1, createdAt: -1 }),
-    collections.WorldInvitations.createIndex({ inviteeEmail: 1, status: 1 }),
-    collections.WorldInvitations.createIndex({ worldId: 1, inviteeEmail: 1 }),
-  ]);
-
-  return collections;
 }

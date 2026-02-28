@@ -125,12 +125,9 @@ export function TopbarWorldMenu({ onClose, onShareWorld, buttonRef }: Props) {
                 onShare={() => onShareWorld(w._id)}
                 onDelete={async () => {
                   const confirmDelete = confirm(`Delete "${w.name}"? This removes all pages and cannot be undone.`);
-                  console.log("[DELETE] Confirm result:", confirmDelete);
                   if (confirmDelete) {
-                    console.log("[DELETE] Attempting to delete world:", w._id);
                     try {
                       await deleteWorld(w._id);
-                      console.log("[DELETE] World deleted successfully");
                       onClose(); // Close the main menu after deletion
                     } catch (err) {
                       console.error("[DELETE] Failed to delete world:", err);

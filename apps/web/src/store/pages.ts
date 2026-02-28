@@ -162,7 +162,12 @@ export const usePages = create<PagesState>((set, get) => ({
         };
         walk(id);
         const pages = s.pages.filter((p) => !omit.has(p._id));
-        return { pages, tree: toTree(pages) };
+        return {
+          pages,
+          tree: toTree(pages),
+          currentPageId: omit.has(s.currentPageId ?? "") ? null : s.currentPageId,
+          editingPageId: omit.has(s.editingPageId ?? "") ? null : s.editingPageId,
+        };
       });
     } catch (e) {
       console.error("[PAGES] delete error", e);

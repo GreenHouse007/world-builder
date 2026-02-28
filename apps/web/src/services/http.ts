@@ -13,15 +13,15 @@ export async function api<T>(
   let { idToken } = authState;
   const { user } = authState;
 
-  console.log("[API] starting request:", path, "user:", user?.uid);
+  if (import.meta.env.DEV) console.log("[API] starting request:", path, "user:", user?.uid);
 
   if (!idToken) {
-    console.log("[API] No token in store, checking Firebase auth...");
+    if (import.meta.env.DEV) console.log("[API] No token in store, checking Firebase auth...");
     const auth = getAuth();
     const currentUser = auth.currentUser;
     if (currentUser) {
       idToken = await currentUser.getIdToken();
-      console.log("[API] Got fresh token from Firebase:", idToken.slice(0, 8));
+      if (import.meta.env.DEV) console.log("[API] Got fresh token from Firebase:", idToken.slice(0, 8));
       const { setIdToken } = useAuth.getState();
       setIdToken(idToken);
     } else {
@@ -34,7 +34,7 @@ export async function api<T>(
     throw new Error("No auth token; user is not signed in.");
   }
 
-  console.log("[API] Sending request to", `${API_URL}/api${path}`);
+  if (import.meta.env.DEV) console.log("[API] Sending request to", `${API_URL}/api${path}`);
 
   try {
     const res = await fetch(`${API_URL}/api${path}`, {
@@ -46,7 +46,7 @@ export async function api<T>(
       },
     });
 
-    console.log("[API] Response status:", res.status);
+    if (import.meta.env.DEV) console.log("[API] Response status:", res.status);
 
     // Backend is reachable, mark as online
     const { setOffline } = useAppStatus.getState();
@@ -69,7 +69,7 @@ export async function api<T>(
     }
 
     const json = await res.json();
-    console.log("[API] ✅ Success:", path, json);
+    if (import.meta.env.DEV) console.log("[API] ✅ Success:", path, json);
     return json as T;
   } catch (error) {
     // Network error or backend unreachable

@@ -79,7 +79,7 @@ function EditablePageTitle({ pageId, initialTitle }: { pageId: string; initialTi
 function useDebouncedCallback<Args extends readonly unknown[], R>(
   fn: (...args: Args) => R,
   delay = 3000
-) {
+): [(...args: Args) => void, () => void] {
   const t = useRef<number | null>(null);
   const fnRef = useRef<(...args: Args) => R>(fn);
 
@@ -87,16 +87,25 @@ function useDebouncedCallback<Args extends readonly unknown[], R>(
     fnRef.current = fn;
   }, [fn]);
 
-  return useCallback(
+  const debounced = useCallback(
     (...args: Args) => {
       if (t.current) window.clearTimeout(t.current);
       t.current = window.setTimeout(() => {
-        // ignore any returned Promise/value
+        t.current = null;
         void fnRef.current(...args);
       }, delay);
     },
     [delay]
   ) as (...args: Args) => void;
+
+  const cancel = useCallback(() => {
+    if (t.current !== null) {
+      window.clearTimeout(t.current);
+      t.current = null;
+    }
+  }, []);
+
+  return [debounced, cancel];
 }
 
 type GetContentResp = { doc: string | null };
@@ -129,21 +138,11 @@ export default function PageView() {
     };
   }, [setOffline]);
 
-  useEffect(() => {
-    if (!currentPageId) {
-      setInitial(null);
-      return;
-    }
-    setLoading(true);
-    setLoadErr(null);
-    api<GetContentResp>(`/pages/${currentPageId}/content`)
-      .then((res) => setInitial(res?.doc ?? ""))
-      .catch((e) => setLoadErr(e?.message || "Failed to load content"))
-      .finally(() => setLoading(false));
-  }, [currentPageId]);
+  const pendingHtmlRef = useRef<string | null>(null);
 
   const save = useCallback(
     async (html: string) => {
+      pendingHtmlRef.current = null;
       if (!currentPageId) return;
       setSaving(true);
       setOffline(false);
@@ -166,12 +165,45 @@ export default function PageView() {
     [currentPageId, setSaving, setSavedNow, setOffline]
   );
 
-  const debouncedSave = useDebouncedCallback(save, 3000);
+  // saveRef always points to the current page's save so the [currentPageId]
+  // cleanup can flush pending content to the *old* page, not the new one.
+  const saveRef = useRef(save);
+  useEffect(() => { saveRef.current = save; }, [save]);
+
+  const [debouncedSave, cancelDebouncedSave] = useDebouncedCallback(save, 3000);
 
   const handleChange = useCallback((html: string) => {
+    pendingHtmlRef.current = html;
     setUnsavedChanges(true);
     debouncedSave(html);
   }, [debouncedSave, setUnsavedChanges]);
+
+  useEffect(() => {
+    if (!currentPageId) {
+      setInitial(null);
+      return;
+    }
+    setLoading(true);
+    setLoadErr(null);
+    api<GetContentResp>(`/pages/${currentPageId}/content`)
+      .then((res) => setInitial(res?.doc ?? ""))
+      .catch((e) => setLoadErr(e?.message || "Failed to load content"))
+      .finally(() => setLoading(false));
+
+    return () => {
+      // Cancel any pending debounce and immediately flush unsaved content for
+      // the *current* page before switching to a new one. saveRef.current still
+      // points to the old page's save here because the [save] effect hasn't
+      // re-run yet with the new page's save callback.
+      cancelDebouncedSave();
+      const pending = pendingHtmlRef.current;
+      if (pending !== null) {
+        pendingHtmlRef.current = null;
+        void saveRef.current(pending);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPageId]);
 
   const header = useMemo(() => {
     if (!currentWorldId) return "Select or create a world";

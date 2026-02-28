@@ -29,13 +29,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(400).json({ error: "File must be an image" }); return;
     }
 
-    const result = await cloudinary.uploader.upload(fileEntry.filepath, {
-      folder: "world-builder",
-      resource_type: "image",
-      transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
-    });
-
-    fs.unlinkSync(fileEntry.filepath);
+    let result;
+    try {
+      result = await cloudinary.uploader.upload(fileEntry.filepath, {
+        folder: "world-builder",
+        resource_type: "image",
+        transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
+      });
+    } finally {
+      try { fs.unlinkSync(fileEntry.filepath); } catch { /* ignore */ }
+    }
 
     res.status(200).json({
       url: result.secure_url,

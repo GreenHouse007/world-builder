@@ -18,16 +18,6 @@ export function Topbar() {
   const [showExport, setShowExport] = useState(false);
   const currentWorld = worlds.find((w) => w._id === currentWorldId) ?? null;
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  console.log(
-    "[TOPBAR]",
-    "\n  worlds:",
-    worlds,
-    "\n  currentWorldId:",
-    currentWorldId,
-    "\n  currentWorld:",
-    currentWorld
-  );
-
   // Format the saved timestamp
   const formatSavedTime = (isoString: string) => {
     const date = new Date(isoString);

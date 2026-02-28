@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Outlet } from "@tanstack/react-router";
 import { Topbar } from "..//components/layout/Topbar";
 import { Sidebar } from "../components/layout/Sidebar";
@@ -60,6 +60,15 @@ export default function AppLayout() {
       void fetchPages(currentWorldId);
     }
   }, [currentWorldId, fetchPages]);
+
+  const prevUserRef = useRef(user);
+  useEffect(() => {
+    if (prevUserRef.current && !user) {
+      usePages.setState({ pages: [], tree: [], currentPageId: null, editingPageId: null, loading: false, error: null, filteredIds: new Set() });
+      useWorlds.setState({ worlds: [], currentWorldId: null, loading: false, error: null });
+    }
+    prevUserRef.current = user;
+  }, [user]);
 
   // Bootstrapping
   if (authLoading || (user && worldsLoading && worlds.length === 0)) {

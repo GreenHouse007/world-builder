@@ -310,7 +310,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.status(403).json({ error: "only owners and admins can invite" }); return;
       }
 
-      const existingMember = world.members.find((m) => m.uid === inviteeEmail || m.uid.includes(inviteeEmail));
+      const existingMember = world.members.find((m) => m.email === inviteeEmail);
       if (existingMember) { res.status(400).json({ error: "user already has access" }); return; }
 
       const existingInvite = await WorldInvitations.findOne({ worldId: worldObjectId, inviteeEmail, status: "pending" });

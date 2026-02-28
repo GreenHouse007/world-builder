@@ -26,13 +26,13 @@ export const useAuth = create<AuthState>((set) => ({
 
   setUserFromFirebase: async (fbUser) => {
     if (!fbUser) {
-      console.log("[AUTH] setUserFromFirebase: null (signed out)");
+      if (import.meta.env.DEV) console.log("[AUTH] setUserFromFirebase: null (signed out)");
       set({ user: null, idToken: null, loading: false });
       return;
     }
 
     const token = await fbUser.getIdToken();
-    console.log("[AUTH] Firebase user detected:", fbUser.uid, fbUser.email);
+    if (import.meta.env.DEV) console.log("[AUTH] Firebase user detected:", fbUser.uid, fbUser.email);
 
     set({
       user: {
@@ -43,17 +43,14 @@ export const useAuth = create<AuthState>((set) => ({
       idToken: token,
       loading: false,
     });
-    console.log(
-      "[AUTH] Zustand state updated with token prefix:",
-      token.slice(0, 8)
-    );
+    if (import.meta.env.DEV) console.log("[AUTH] Zustand state updated with token prefix:", token.slice(0, 8));
   },
 
   logout: async () => {
-    console.log("[AUTH] logout() called");
+    if (import.meta.env.DEV) console.log("[AUTH] logout() called");
     await signOut(auth);
     set({ user: null, idToken: null, loading: false });
-    console.log("[AUTH] logout() completed");
+    if (import.meta.env.DEV) console.log("[AUTH] logout() completed");
   },
 
   setIdToken: (token) => set({ idToken: token }),
