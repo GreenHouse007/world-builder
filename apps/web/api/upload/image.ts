@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { withAuth } from "../_lib/respond";
+import { withAuth } from "../_lib/respond.js";
 import { v2 as cloudinary } from "cloudinary";
 import formidable from "formidable";
 import fs from "fs";

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { withAuth } from "../_lib/respond";
-import { ObjectId, type PageDoc, type WorldDoc } from "../_lib/db";
+import { withAuth } from "../_lib/respond.js";
+import { ObjectId, type PageDoc, type WorldDoc } from "../_lib/db.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function ensurePageAccess(pageId: string, uid: string, Pages: any, Worlds: any): Promise<{ page: PageDoc; world: WorldDoc } | null> {

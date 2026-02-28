@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyToken } from "./auth";
-import { getCollections, type Collections } from "./db";
+import { verifyToken } from "./auth.js";
+import { getCollections, type Collections } from "./db.js";
 
 export async function withAuth(
   req: VercelRequest,

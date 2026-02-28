@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { withAuth } from "../_lib/respond";
-import { ObjectId, type WorldDoc, type WorldMember } from "../_lib/db";
+import { withAuth } from "../_lib/respond.js";
+import { ObjectId, type WorldDoc, type WorldMember } from "../_lib/db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   await withAuth(req, res, ["GET", "POST"], async (user, { Worlds, WorldActivity }) => {
