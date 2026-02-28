@@ -1,13 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-
 export async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
-  // Get auth token from Firebase
   const authHeader = await getAuthHeader();
 
-  const response = await fetch(`${API_BASE_URL}/upload/image`, {
+  const response = await fetch("/api/upload/image", {
     method: "POST",
     headers: authHeader ? { Authorization: authHeader } : {},
     body: formData,
@@ -23,7 +20,6 @@ export async function uploadImage(file: File): Promise<string> {
 
 async function getAuthHeader(): Promise<string | null> {
   try {
-    // Try to get Firebase auth token
     const { getAuth } = await import("firebase/auth");
     const auth = getAuth();
     const user = auth.currentUser;

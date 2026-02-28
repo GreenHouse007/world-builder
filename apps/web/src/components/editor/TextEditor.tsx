@@ -19,6 +19,9 @@ import { EditorToolbar } from "./EditorToolbar";
 import { TableContextMenu } from "./TableContextMenu";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { ImageContextMenu } from "./ImageContextMenu";
+import { LinkContextMenu } from "./LinkContextMenu";
+import { LinkPageModal } from "./LinkPageModal";
+import { LinkUrlModal } from "./LinkUrlModal";
 // import { EditorBubble } from "./EditorBubbleMenu"; // TODO: Fix for Tiptap v3
 import SlashCommand from "../../extensions/SlashCommand";
 import { BlockDragHandle } from "../../extensions/BlockDragHandle";
@@ -30,6 +33,7 @@ import { CustomTableCell } from "../../extensions/CustomTableCell";
 import { CustomTableHeader } from "../../extensions/CustomTableHeader";
 import { ResizableImage } from "../../extensions/ResizableImage";
 import { uploadImage } from "../../lib/imageUpload";
+import { usePages } from "../../store/pages";
 
 type Props = {
   initialContent: string | null;
@@ -37,6 +41,7 @@ type Props = {
   onSaveStart?: () => void;
   onSaveEnd?: () => void;
   placeholder?: string;
+  currentPageId?: string | null;
 };
 
 export function TextEditor({
@@ -45,6 +50,7 @@ export function TextEditor({
   onSaveStart,
   onSaveEnd,
   placeholder = "Start writing your world…",
+  currentPageId,
 }: Props) {
   const [html, setHtml] = useState(initialContent || "");
   const [showTableMenu, setShowTableMenu] = useState(false);
@@ -53,8 +59,20 @@ export function TextEditor({
   const [editorMenuPos, setEditorMenuPos] = useState({ x: 0, y: 0 });
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [imageMenuPos, setImageMenuPos] = useState({ x: 0, y: 0 });
+  const [showLinkMenu, setShowLinkMenu] = useState(false);
+  const [linkMenuPos, setLinkMenuPos] = useState({ x: 0, y: 0 });
+  const [linkMenuData, setLinkMenuData] = useState<{
+    isEditing: boolean;
+    href?: string;
+    linkType?: "internal" | "external";
+    pageId?: string;
+    pageTitle?: string;
+  } | null>(null);
+  const [showPagePicker, setShowPagePicker] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { editorTheme } = useTheme();
+  const { setCurrentPage } = usePages();
 
   const editor = useEditor({
     extensions: [
@@ -68,7 +86,15 @@ export function TextEditor({
         horizontalRule: {},
       }),
       Underline,
-      Link.configure({ autolink: true, openOnClick: true, linkOnPaste: true }),
+      Link.configure({
+        autolink: true,
+        openOnClick: false,
+        linkOnPaste: true,
+        HTMLAttributes: {
+          class:
+            "text-primary underline cursor-pointer hover:opacity-80 transition-opacity",
+        },
+      }),
       Highlight.configure({ multicolor: true }),
       Placeholder.configure({ placeholder }),
       Gapcursor,
@@ -118,10 +144,61 @@ export function TextEditor({
       },
       handleDOMEvents: {
         mousedown: () => false,
+        click: (view, pos, event) => {
+          const target = event.target as HTMLElement;
+          const link = target.closest("a[data-link-type]");
+
+          if (link) {
+            event.preventDefault();
+            const linkType = link.getAttribute("data-link-type");
+            const href = link.getAttribute("href");
+
+            if (linkType === "internal") {
+              const pageId = link.getAttribute("data-page-id");
+              if (pageId) {
+                setCurrentPage(pageId);
+              }
+            } else if (linkType === "external" && href) {
+              window.open(href, "_blank", "noopener,noreferrer");
+            }
+
+            return true;
+          }
+
+          return false;
+        },
         contextmenu: (view, event) => {
           const target = event.target as HTMLElement;
 
-          // Check if right-click was on a table cell or header
+          // Priority 1: Existing link
+          const linkElement = target.closest("a[href]");
+          if (linkElement) {
+            event.preventDefault();
+            setLinkMenuData({
+              isEditing: true,
+              href: linkElement.getAttribute("href") || "",
+              linkType: (linkElement.getAttribute("data-link-type") as
+                | "internal"
+                | "external") || "external",
+              pageId: linkElement.getAttribute("data-page-id") || undefined,
+              pageTitle: linkElement.getAttribute("data-page-title") || undefined,
+            });
+            setLinkMenuPos({ x: event.clientX, y: event.clientY });
+            setShowLinkMenu(true);
+            return true;
+          }
+
+          // Priority 2: Text selection
+          const { from, to } = view.state.selection;
+          if (from !== to) {
+            event.preventDefault();
+            setLinkMenuData({ isEditing: false });
+            setLinkMenuPos({ x: event.clientX, y: event.clientY });
+            setShowLinkMenu(true);
+            return true;
+          }
+
+          // Priority 3: Table cell or header
           if (target.tagName === "TD" || target.tagName === "TH" || target.closest("td, th")) {
             event.preventDefault();
             setTableMenuPos({ x: event.clientX, y: event.clientY });
@@ -129,7 +206,7 @@ export function TextEditor({
             return true;
           }
 
-          // Check if right-click was on an image
+          // Priority 4: Image
           if (target.tagName === "IMG") {
             event.preventDefault();
             setImageMenuPos({ x: event.clientX, y: event.clientY });
@@ -137,7 +214,7 @@ export function TextEditor({
             return true;
           }
 
-          // Show editor context menu for other areas
+          // Default: Show editor context menu for other areas
           event.preventDefault();
           setEditorMenuPos({ x: event.clientX, y: event.clientY });
           setShowEditorMenu(true);
@@ -237,6 +314,53 @@ export function TextEditor({
   useEffect(() => {
     setHtml(initialContent || "");
   }, [initialContent]);
+
+  // Link operation handlers
+  const handleCreateInternalLink = (pageId: string, pageTitle: string) => {
+    if (!editor) return;
+
+    editor
+      .chain()
+      .focus()
+      .setLink({
+        href: `/page/${pageId}`,
+        "data-link-type": "internal",
+        "data-page-id": pageId,
+        "data-page-title": pageTitle,
+      })
+      .run();
+
+    setShowPagePicker(false);
+    setShowLinkMenu(false);
+    setLinkMenuData(null);
+  };
+
+  const handleCreateExternalLink = (url: string) => {
+    if (!editor) return;
+
+    editor
+      .chain()
+      .focus()
+      .setLink({
+        href: url,
+        "data-link-type": "external",
+        target: "_blank",
+        rel: "noopener noreferrer",
+      })
+      .run();
+
+    setShowUrlInput(false);
+    setShowLinkMenu(false);
+    setLinkMenuData(null);
+  };
+
+  const handleRemoveLink = () => {
+    if (!editor) return;
+
+    editor.chain().focus().unsetLink().run();
+    setShowLinkMenu(false);
+    setLinkMenuData(null);
+  };
 
   // Track previous theme for color conversion
   const prevThemeRef = useRef(editorTheme);
@@ -347,6 +471,70 @@ export function TextEditor({
           x={imageMenuPos.x}
           y={imageMenuPos.y}
           onClose={() => setShowImageMenu(false)}
+        />
+      )}
+
+      {/* Link Context Menu */}
+      {showLinkMenu && editor && (
+        <LinkContextMenu
+          editor={editor as Editor}
+          x={linkMenuPos.x}
+          y={linkMenuPos.y}
+          existingLink={
+            linkMenuData?.isEditing
+              ? {
+                  href: linkMenuData.href!,
+                  type: linkMenuData.linkType!,
+                  pageId: linkMenuData.pageId,
+                  pageTitle: linkMenuData.pageTitle,
+                }
+              : undefined
+          }
+          onClose={() => {
+            setShowLinkMenu(false);
+            setLinkMenuData(null);
+          }}
+          onLinkToPage={() => {
+            setShowPagePicker(true);
+            setShowLinkMenu(false);
+          }}
+          onLinkToUrl={() => {
+            setShowUrlInput(true);
+            setShowLinkMenu(false);
+          }}
+          onEditLink={() => {
+            if (linkMenuData?.linkType === "internal") {
+              setShowPagePicker(true);
+            } else {
+              setShowUrlInput(true);
+            }
+            setShowLinkMenu(false);
+          }}
+          onRemoveLink={handleRemoveLink}
+        />
+      )}
+
+      {/* Page Picker Modal */}
+      {showPagePicker && (
+        <LinkPageModal
+          onClose={() => {
+            setShowPagePicker(false);
+            setLinkMenuData(null);
+          }}
+          onSelectPage={handleCreateInternalLink}
+          currentPageId={currentPageId}
+        />
+      )}
+
+      {/* URL Input Modal */}
+      {showUrlInput && (
+        <LinkUrlModal
+          onClose={() => {
+            setShowUrlInput(false);
+            setLinkMenuData(null);
+          }}
+          onSubmit={handleCreateExternalLink}
+          initialUrl={linkMenuData?.isEditing ? linkMenuData.href : ""}
         />
       )}
 

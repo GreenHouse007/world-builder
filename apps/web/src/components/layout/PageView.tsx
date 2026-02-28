@@ -209,6 +209,7 @@ export default function PageView() {
             key={currentPageId}
             initialContent={initial}
             onChange={handleChange}
+            currentPageId={currentPageId}
           />
         </div>
       )}

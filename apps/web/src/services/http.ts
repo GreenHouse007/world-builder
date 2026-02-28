@@ -3,7 +3,7 @@ import { getAuth } from "firebase/auth";
 import { useAuth } from "../store/auth";
 import { useAppStatus } from "../store/appStatus";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 export async function api<T>(
   path: string,
@@ -34,10 +34,10 @@ export async function api<T>(
     throw new Error("No auth token; user is not signed in.");
   }
 
-  console.log("[API] Sending request to", `${API_URL}${path}`);
+  console.log("[API] Sending request to", `${API_URL}/api${path}`);
 
   try {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(`${API_URL}/api${path}`, {
       ...options,
       headers: {
         ...(options.body ? { "Content-Type": "application/json" } : {}),

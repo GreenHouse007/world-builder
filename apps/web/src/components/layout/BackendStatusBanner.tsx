@@ -19,7 +19,7 @@ export function BackendStatusBanner() {
       setIsRetrying(true);
       try {
         // Try a health check endpoint
-        await fetch(import.meta.env.VITE_API_URL || "http://localhost:3001" + "/health");
+        await api("/health");
         console.log("[BackendStatus] Backend is back online!");
         setOffline(false);
         setRetryCount(0);
@@ -37,7 +37,7 @@ export function BackendStatusBanner() {
   const handleManualRetry = async () => {
     setIsRetrying(true);
     try {
-      await fetch(import.meta.env.VITE_API_URL || "http://localhost:3001" + "/health");
+      await api("/health");
       setOffline(false);
       setRetryCount(0);
     } catch (error) {
