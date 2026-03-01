@@ -3,7 +3,7 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import AppLayout from "../layouts/AppLayout";
+import AppLayout from "../components/layout/AppLayout";
 import HomePage from "../pages/home/HomePage";
 
 const root = createRootRoute({ component: AppLayout });

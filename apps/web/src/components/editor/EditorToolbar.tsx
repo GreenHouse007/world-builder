@@ -15,6 +15,7 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const [showImageAlignMenu, setShowImageAlignMenu] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [, forceUpdate] = useState({});
 
@@ -43,9 +44,10 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    setUploadError(null);
     const imageFile = files[0];
     if (!imageFile.type.startsWith("image/")) {
-      alert("Please select an image file");
+      setUploadError("Please select an image file.");
       return;
     }
 
@@ -53,12 +55,10 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       const url = await uploadImage(imageFile);
       editor.chain().focus().setImage({ src: url, alt: imageFile.name }).run();
       // Update the image attributes to set default height
-      const { state } = editor;
-      const { selection } = state;
       editor.chain().focus().updateAttributes("resizableImage", { height: "300px" }).run();
     } catch (error) {
       console.error("Failed to upload image:", error);
-      alert("Failed to upload image");
+      setUploadError("Image upload failed. Please try again.");
     }
 
     // Reset the file input
@@ -260,6 +260,7 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
   };
 
   return (
+    <>
     <div className="flex flex-wrap items-center gap-2 p-2">
       {/* Font Family */}
       <Dropdown
@@ -602,5 +603,9 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
         />
       )}
     </div>
+    {uploadError && (
+      <div className="text-xs text-red-400 px-2 py-1">{uploadError}</div>
+    )}
+    </>
   );
 }

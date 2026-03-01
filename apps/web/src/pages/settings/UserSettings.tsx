@@ -3,8 +3,9 @@ import { useAuth } from "../../store/auth";
 import { useWorlds } from "../../store/worlds";
 import { usePages } from "../../store/pages";
 import { useTheme } from "../../store/theme";
-import { updateProfile, sendPasswordResetEmail } from "firebase/auth";
+import { updateProfile, sendPasswordResetEmail, deleteUser } from "firebase/auth";
 import { auth } from "../../lib/firebase";
+import { api } from "../../services/http";
 
 interface DeleteModalProps {
   onClose: () => void;
@@ -96,10 +97,19 @@ export default function UserSettings() {
   };
 
   const handleDeleteAccount = async () => {
-    // TODO: API call to delete account
-    console.log("Deleting account...");
     setShowDeleteModal(false);
-    await logout();
+    try {
+      await api("/user", { method: "DELETE" });
+      await deleteUser(auth.currentUser!);
+      await logout();
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? "";
+      if (code === "auth/requires-recent-login") {
+        alert("For security, please sign out and sign back in before deleting your account.");
+      } else {
+        alert("Failed to delete account. Please try again.");
+      }
+    }
   };
 
   // Calculate stats

@@ -183,14 +183,16 @@ export default function PageView() {
       setInitial(null);
       return;
     }
+    let isCurrent = true;
     setLoading(true);
     setLoadErr(null);
     api<GetContentResp>(`/pages/${currentPageId}/content`)
-      .then((res) => setInitial(res?.doc ?? ""))
-      .catch((e) => setLoadErr(e?.message || "Failed to load content"))
-      .finally(() => setLoading(false));
+      .then((res) => { if (isCurrent) setInitial(res?.doc ?? ""); })
+      .catch((e) => { if (isCurrent) setLoadErr(e?.message || "Failed to load content"); })
+      .finally(() => { if (isCurrent) setLoading(false); });
 
     return () => {
+      isCurrent = false;
       // Cancel any pending debounce and immediately flush unsaved content for
       // the *current* page before switching to a new one. saveRef.current still
       // points to the old page's save here because the [save] effect hasn't

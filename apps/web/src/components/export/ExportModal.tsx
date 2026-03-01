@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useWorlds } from "../../store/worlds";
-import { usePages } from "../../store/pages";
+import { usePages, type PageNode } from "../../store/pages";
 import { exportPdf } from "../../services/export";
 
 export function ExportModal({ onClose }: { onClose: () => void }) {
@@ -10,7 +10,7 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
 
   const allIds = useMemo(() => {
     const out: string[] = [];
-    const walk = (n: any) => {
+    const walk = (n: PageNode) => {
       out.push(n._id);
       n.children?.forEach(walk);
     };
@@ -19,6 +19,8 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
   }, [tree]);
 
   const [checked, setChecked] = useState<Set<string>>(new Set(allIds));
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const toggle = (id: string) => {
     const next = new Set(checked);
@@ -30,16 +32,25 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
   const clearAll = () => setChecked(new Set());
 
   async function doExport() {
-    if (!currentWorldId || checked.size === 0) return;
-    // order pages by current tree order
+    if (!currentWorldId || checked.size === 0 || exporting) return;
+    setExporting(true);
+    setExportError(null);
     const order: string[] = [];
-    const walk = (n: any) => {
+    const walk = (n: PageNode) => {
       if (checked.has(n._id)) order.push(n._id);
       n.children?.forEach(walk);
     };
     tree.forEach(walk);
-    await exportPdf({ worldId: currentWorldId, pageIds: [...checked], order });
-    onClose();
+    try {
+      await exportPdf({ worldId: currentWorldId, pageIds: [...checked], order });
+      onClose();
+    } catch (err) {
+      setExportError(
+        err instanceof Error ? err.message : "Export failed. Please allow popups and try again."
+      );
+    } finally {
+      setExporting(false);
+    }
   }
 
   return createPortal(
@@ -73,15 +84,21 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="h-80 overflow-auto border border-white/10 rounded-lg p-2">
-          {tree.map((n) => (
-            <Node
-              key={n._id}
-              n={n}
-              depth={0}
-              checked={checked}
-              toggle={toggle}
-            />
-          ))}
+          {tree.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-sm text-slate-400">
+              No pages in this world yet.
+            </div>
+          ) : (
+            tree.map((n) => (
+              <Node
+                key={n._id}
+                n={n}
+                depth={0}
+                checked={checked}
+                toggle={toggle}
+              />
+            ))
+          )}
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
@@ -92,12 +109,16 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
             Cancel
           </button>
           <button
-            className="px-3 py-2 rounded bg-indigo-500 text-white"
+            className="px-3 py-2 rounded bg-indigo-500 text-white disabled:opacity-50"
             onClick={doExport}
+            disabled={exporting || checked.size === 0}
           >
-            Export PDF
+            {exporting ? "Exporting…" : "Export PDF"}
           </button>
         </div>
+        {exportError && (
+          <p className="mt-2 text-xs text-red-400 text-right">{exportError}</p>
+        )}
       </div>
     </div>,
     document.body
@@ -110,7 +131,7 @@ function Node({
   checked,
   toggle,
 }: {
-  n: any;
+  n: PageNode;
   depth: number;
   checked: Set<string>;
   toggle: (id: string) => void;
@@ -129,7 +150,7 @@ function Node({
         <div className="text-sm text-slate-200 truncate">{n.title}</div>
       </div>
       {n.children?.length
-        ? n.children.map((c: any) => (
+        ? n.children.map((c) => (
             <Node
               key={c._id}
               n={c}

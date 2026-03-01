@@ -5,6 +5,19 @@ import { auth, googleProvider } from "../../lib/firebase";
 import { useAuth } from "../../store/auth";
 import { BackendStatusBanner } from "./BackendStatusBanner";
 
+function friendlyAuthError(err: unknown): string {
+  const code = (err as { code?: string })?.code ?? "";
+  if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential")
+    return "Incorrect email or password.";
+  if (code === "auth/too-many-requests")
+    return "Too many attempts. Please wait a moment and try again.";
+  if (code === "auth/network-request-failed")
+    return "Network error. Check your connection and try again.";
+  if (code === "auth/popup-closed-by-user")
+    return "Sign-in cancelled.";
+  return err instanceof Error ? err.message : "Unable to sign in.";
+}
+
 export function AuthOverlay() {
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
@@ -24,8 +37,7 @@ export function AuthOverlay() {
       await signInWithEmailAndPassword(auth, email, password);
       // onAuthStateChanged will update useAuth & hide overlay
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unable to sign in.";
-      setError(message);
+      setError(friendlyAuthError(err));
     } finally {
       setSubmitting(false);
     }
@@ -37,11 +49,9 @@ export function AuthOverlay() {
 
     try {
       await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged will handle store
+      // onIdTokenChanged will handle store
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Google sign-in failed.";
-      setError(message);
+      setError(friendlyAuthError(err));
     } finally {
       setSubmitting(false);
     }

@@ -3,7 +3,12 @@
     "allow": [
       "mcp__ide__getDiagnostics",
       "Bash(pnpm build:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(xargs grep:*)",
+      "Bash(head:*)",
+      "Bash(xargs wc:*)",
+      "Bash(read f:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

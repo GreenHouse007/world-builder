@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { withAuth } from "../_lib/respond.js";
-import { ObjectId, type WorldDoc, type WorldMember } from "../_lib/db.js";
+import { ObjectId, logActivity, type WorldDoc, type WorldMember } from "../_lib/db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  await withAuth(req, res, ["GET", "POST"], async (user, { Worlds, WorldActivity }) => {
+  await withAuth(req, res, ["GET", "POST"], async (user, { Worlds }) => {
     if (req.method === "GET") {
       const uid = user.uid;
       const worlds = await Worlds.find({
@@ -63,15 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await Worlds.insertOne(doc);
 
-    await WorldActivity.insertOne({
-      _id: new ObjectId(),
-      worldId: doc._id,
-      actorUid: uid,
-      actorName: user.name || user.email || "User",
-      type: "world_created",
-      meta: { name: doc.name },
-      createdAt: now,
-    });
+    await logActivity(doc._id, uid, user, "world_created", { name: doc.name });
 
     res.status(200).json({
       _id: doc._id.toString(),

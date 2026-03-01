@@ -76,11 +76,11 @@ export const usePages = create<PagesState>((set, get) => ({
   async fetchPages(worldId) {
     set({ loading: true, error: null });
     try {
-      const data = await api<PageNode[]>(`/worlds/${worldId}/pages`);
-
-      // Fetch favorites for this world
-      const favorites = await api<{ pageId: string }[]>(`/worlds/${worldId}/favorites`);
-      const favoriteIds = new Set(favorites.map(f => f.pageId));
+      const [data, favorites] = await Promise.all([
+        api<PageNode[]>(`/worlds/${worldId}/pages`),
+        api<{ pageId: string }[]>(`/worlds/${worldId}/favorites`),
+      ]);
+      const favoriteIds = new Set(favorites.map((f) => f.pageId));
 
       const normalized = data.map((p) => ({
         ...p,

@@ -41,7 +41,11 @@ export function LinkUrlModal({
     // For absolute URLs, ensure they have a protocol or can be made valid
     try {
       const urlToTest = input.startsWith("http") ? input : `https://${input}`;
-      new URL(urlToTest);
+      const parsed = new URL(urlToTest);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        setError("Only http and https links are allowed.");
+        return false;
+      }
       setError("");
       return true;
     } catch {

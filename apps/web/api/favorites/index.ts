@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { withAuth } from "../_lib/respond.js";
+import { withAuth, parseObjectId } from "../_lib/respond.js";
 import { ObjectId } from "../_lib/db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -7,14 +7,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { worldId, pageId: bodyPageId } = req.body as { worldId: string; pageId: string };
     const uid = user.uid;
 
-    let worldObjectId: ObjectId;
-    let pageObjectId: ObjectId;
-    try {
-      worldObjectId = new ObjectId(worldId);
-      pageObjectId = new ObjectId(bodyPageId);
-    } catch {
-      res.status(400).json({ error: "invalid ids" }); return;
-    }
+    const worldObjectId = parseObjectId(worldId);
+    const pageObjectId = parseObjectId(bodyPageId);
+    if (!worldObjectId || !pageObjectId) { res.status(400).json({ error: "invalid ids" }); return; }
 
     const page = await Pages.findOne({ _id: pageObjectId, worldId: worldObjectId });
     if (!page) { res.status(404).json({ error: "page not found in world" }); return; }

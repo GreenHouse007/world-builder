@@ -1,6 +1,6 @@
 // apps/web/src/store/auth.ts
 import { create } from "zustand";
-import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { onIdTokenChanged, signOut, type User } from "firebase/auth";
 import { auth } from "../lib/firebase";
 
 interface AuthUser {
@@ -56,7 +56,7 @@ export const useAuth = create<AuthState>((set) => ({
   setIdToken: (token) => set({ idToken: token }),
 }));
 
-// Single auth bootstrap
-onAuthStateChanged(auth, (fbUser) => {
+// Single auth bootstrap — onIdTokenChanged fires on sign-in/out AND on token refresh (~55 min)
+onIdTokenChanged(auth, (fbUser) => {
   void useAuth.getState().setUserFromFirebase(fbUser);
 });

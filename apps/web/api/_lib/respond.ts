@@ -1,6 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyToken } from "./auth.js";
-import { getCollections, type Collections } from "./db.js";
+import { ObjectId, getCollections, type Collections } from "./db.js";
+
+export function parseRouteParams(rawParams: unknown): string[] {
+  return Array.isArray(rawParams) ? rawParams : rawParams ? [rawParams as string] : [];
+}
+
+export function parseObjectId(id: string): ObjectId | null {
+  try { return new ObjectId(id); } catch { return null; }
+}
 
 export async function withAuth(
   req: VercelRequest,

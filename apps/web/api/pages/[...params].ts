@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { withAuth } from "../_lib/respond.js";
-import { ObjectId, type PageDoc, type WorldDoc } from "../_lib/db.js";
+import { withAuth, parseRouteParams } from "../_lib/respond.js";
+import { ObjectId, logActivity, type PageDoc, type WorldDoc } from "../_lib/db.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function ensurePageAccess(pageId: string, uid: string, Pages: any, Worlds: any): Promise<{ page: PageDoc; world: WorldDoc } | null> {
@@ -24,8 +24,7 @@ async function ensurePageAccess(pageId: string, uid: string, Pages: any, Worlds:
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const rawParams = req.query.params;
-  const params = Array.isArray(rawParams) ? rawParams : rawParams ? [rawParams] : [];
+  const params = parseRouteParams(req.query.params);
   const [pageId, sub] = params;
 
   if (!pageId) {
@@ -54,16 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { $set: { title: nextTitle, updatedAt: now, lastEditedBy: uid, lastEditedAt: now } }
         );
         await Worlds.updateOne({ _id: world._id }, { $set: { lastActivityAt: now, updatedAt: now } });
-        await WorldActivity.insertOne({
-          _id: new ObjectId(),
-          worldId: world._id,
-          pageId: page._id,
-          actorUid: uid,
-          actorName: user.name || user.email || "User",
-          type: "page_renamed",
-          meta: { from: page.title, to: nextTitle },
-          createdAt: now,
-        });
+        await logActivity(world._id, uid, user, "page_renamed", { from: page.title, to: nextTitle }, page._id);
 
         res.status(200).json({ ok: true });
         return;
@@ -95,16 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { _id: world._id },
         { $inc: { "stats.pageCount": -ids.length }, $set: { lastActivityAt: now, updatedAt: now } }
       );
-      await WorldActivity.insertOne({
-        _id: new ObjectId(),
-        worldId: world._id,
-        pageId: page._id,
-        actorUid: uid,
-        actorName: user.name || user.email || "User",
-        type: "page_deleted",
-        meta: { count: ids.length, title: page.title },
-        createdAt: now,
-      });
+      await logActivity(world._id, uid, user, "page_deleted", { count: ids.length, title: page.title }, page._id);
 
       res.status(200).json({ ok: true });
     });
@@ -202,16 +183,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { _id: world._id },
         { $inc: { "stats.pageCount": 1 }, $set: { lastActivityAt: now, updatedAt: now } }
       );
-      await WorldActivity.insertOne({
-        _id: new ObjectId(),
-        worldId: world._id,
-        pageId: newPage._id,
-        actorUid: uid,
-        actorName: user.name || user.email || "User",
-        type: "page_duplicated",
-        meta: { sourcePageId: page._id.toString() },
-        createdAt: now,
-      });
+      await logActivity(world._id, uid, user, "page_duplicated", { sourcePageId: page._id.toString() }, newPage._id);
 
       res.status(200).json({
         _id: newPage._id.toString(),
@@ -259,7 +231,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const oldParentId = page.parentId;
       const oldPosition = page.position;
-      const movingWithinSameParent = oldParentId && parentObjectId && oldParentId.equals(parentObjectId);
+      const movingWithinSameParent =
+        (oldParentId === null && parentObjectId === null) ||
+        (oldParentId !== null && parentObjectId !== null && oldParentId.equals(parentObjectId));
 
       if (position !== undefined && position >= 0) {
         newPos = position;
@@ -276,12 +250,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             );
           }
         } else {
-          if (oldParentId) {
-            await Pages.updateMany(
-              { worldId: world._id, parentId: oldParentId, position: { $gt: oldPosition } },
-              { $inc: { position: -1 } }
-            );
-          }
+          // Always fill the old-parent gap, even when oldParentId is null (root level)
+          await Pages.updateMany(
+            { worldId: world._id, parentId: oldParentId, position: { $gt: oldPosition } },
+            { $inc: { position: -1 } }
+          );
           await Pages.updateMany(
             { worldId: world._id, parentId: parentObjectId, position: { $gte: position } },
             { $inc: { position: 1 } }
@@ -298,16 +271,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { $set: { parentId: parentObjectId, position: newPos, updatedAt: now, lastEditedBy: uid, lastEditedAt: now } }
       );
       await Worlds.updateOne({ _id: world._id }, { $set: { lastActivityAt: now, updatedAt: now } });
-      await WorldActivity.insertOne({
-        _id: new ObjectId(),
-        worldId: world._id,
-        pageId: page._id,
-        actorUid: uid,
-        actorName: user.name || user.email || "User",
-        type: "page_moved",
-        meta: { newParentId: parentObjectId ? parentObjectId.toString() : null },
-        createdAt: now,
-      });
+      await logActivity(world._id, uid, user, "page_moved", { newParentId: parentObjectId ? parentObjectId.toString() : null }, page._id);
 
       res.status(200).json({ ok: true });
     });

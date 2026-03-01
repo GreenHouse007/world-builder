@@ -97,6 +97,27 @@ export interface Collections {
 
 let collections: Collections | null = null;
 
+export async function logActivity(
+  worldId: ObjectId,
+  actorUid: string,
+  actor: { name?: string; email?: string },
+  type: string,
+  meta: Record<string, unknown>,
+  pageId?: ObjectId
+): Promise<void> {
+  const { WorldActivity } = await getCollections();
+  await WorldActivity.insertOne({
+    _id: new ObjectId(),
+    worldId,
+    pageId,
+    actorUid,
+    actorName: actor.name || actor.email || "User",
+    type,
+    meta,
+    createdAt: new Date(),
+  });
+}
+
 export async function getCollections(): Promise<Collections> {
   if (collections) return collections;
 

@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { withAuth } from "../_lib/respond.js";
-import { ObjectId, type PageDoc } from "../_lib/db.js";
+import { withAuth, parseObjectId } from "../_lib/respond.js";
+import { ObjectId, logActivity, type PageDoc } from "../_lib/db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  await withAuth(req, res, ["POST"], async (user, { Worlds, Pages, WorldActivity }) => {
+  await withAuth(req, res, ["POST"], async (user, { Worlds, Pages }) => {
     const { worldId, title, emoji, parentId } = req.body as {
       worldId: string;
       title?: string;
@@ -12,12 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     const uid = user.uid;
 
-    let worldObjectId: ObjectId;
-    try {
-      worldObjectId = new ObjectId(worldId);
-    } catch {
-      res.status(400).json({ error: "invalid worldId" }); return;
-    }
+    const worldObjectId = parseObjectId(worldId);
+    if (!worldObjectId) { res.status(400).json({ error: "invalid worldId" }); return; }
 
     const world = await Worlds.findOne({
       _id: worldObjectId,
@@ -27,11 +23,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let parentObjectId: ObjectId | null = null;
     if (parentId && parentId !== "null") {
-      try {
-        parentObjectId = new ObjectId(parentId);
-      } catch {
-        res.status(400).json({ error: "invalid parentId" }); return;
-      }
+      parentObjectId = parseObjectId(parentId);
+      if (!parentObjectId) { res.status(400).json({ error: "invalid parentId" }); return; }
       const parent = await Pages.findOne({ _id: parentObjectId, worldId: world._id });
       if (!parent) { res.status(400).json({ error: "parent page not found in this world" }); return; }
     }
@@ -66,16 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { $inc: { "stats.pageCount": 1 }, $set: { lastActivityAt: now, updatedAt: now } }
     );
 
-    await WorldActivity.insertOne({
-      _id: new ObjectId(),
-      worldId: world._id,
-      pageId: page._id,
-      actorUid: uid,
-      actorName: user.name || user.email || "User",
-      type: "page_created",
-      meta: { title: safeTitle, parentId: parentObjectId?.toString() ?? null },
-      createdAt: now,
-    });
+    await logActivity(world._id, uid, user, "page_created", { title: safeTitle, parentId: parentObjectId?.toString() ?? null }, page._id);
 
     res.status(200).json({
       _id: page._id.toString(),

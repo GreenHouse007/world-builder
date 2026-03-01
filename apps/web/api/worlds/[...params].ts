@@ -1,10 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { withAuth } from "../_lib/respond.js";
-import { ObjectId, type WorldDoc, type WorldMember } from "../_lib/db.js";
+import { withAuth, parseRouteParams, parseObjectId } from "../_lib/respond.js";
+import { ObjectId, logActivity, type WorldDoc, type WorldMember } from "../_lib/db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const rawParams = req.query.params;
-  const params = Array.isArray(rawParams) ? rawParams : rawParams ? [rawParams] : [];
+  const params = parseRouteParams(req.query.params);
   const [worldId, sub, thirdPart] = params;
 
   if (!worldId) {
@@ -12,10 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  let worldObjectId: ObjectId;
-  try {
-    worldObjectId = new ObjectId(worldId);
-  } catch {
+  const worldObjectId = parseObjectId(worldId);
+  if (!worldObjectId) {
     res.status(400).json({ error: "invalid worldId" });
     return;
   }
@@ -50,15 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!Object.keys(meta).length) { res.status(200).json({ ok: true }); return; }
 
         await Worlds.updateOne({ _id: worldObjectId }, { $set: update });
-        await WorldActivity.insertOne({
-          _id: new ObjectId(),
-          worldId: worldObjectId,
-          actorUid: uid,
-          actorName: user.name || user.email || "User",
-          type: "world_updated",
-          meta,
-          createdAt: new Date(),
-        });
+        await logActivity(worldObjectId, uid, user, "world_updated", meta);
 
         res.status(200).json({ ok: true });
         return;
@@ -80,15 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await WorldActivity.deleteMany({ worldId: worldObjectId });
       await Worlds.deleteOne({ _id: worldObjectId });
 
-      await WorldActivity.insertOne({
-        _id: new ObjectId(),
-        worldId: worldObjectId,
-        actorUid: uid,
-        actorName: user.name || user.email || "User",
-        type: "world_deleted",
-        meta: { pageCount: pageIds.length },
-        createdAt: new Date(),
-      });
+      await logActivity(worldObjectId, uid, user, "world_deleted", { pageCount: pageIds.length });
 
       res.status(200).json({ ok: true });
     });
@@ -175,15 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { $set: { "stats.pageCount": sourcePages.length, lastActivityAt: now, updatedAt: now } }
       );
 
-      await WorldActivity.insertOne({
-        _id: new ObjectId(),
-        worldId: newWorld._id,
-        actorUid: uid,
-        actorName: user.name || user.email || "User",
-        type: "world_created",
-        meta: { name: newWorld.name, duplicatedFrom: sourceWorld._id.toString(), pageCount: sourcePages.length },
-        createdAt: now,
-      });
+      await logActivity(newWorld._id, uid, user, "world_created", { name: newWorld.name, duplicatedFrom: sourceWorld._id.toString(), pageCount: sourcePages.length });
 
       res.status(200).json({
         _id: newWorld._id.toString(),
@@ -298,6 +271,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // POST
       const { email: inviteeEmail, role } = req.body as { email: string; role: "admin" | "editor" };
       if (!inviteeEmail || !role) { res.status(400).json({ error: "email and role are required" }); return; }
+      if (!inviteeEmail.includes("@") || !inviteeEmail.includes(".")) { res.status(400).json({ error: "invalid email address" }); return; }
       if (!["admin", "editor"].includes(role)) { res.status(400).json({ error: "role must be admin or editor" }); return; }
 
       const world = await Worlds.findOne({ _id: worldObjectId });
@@ -330,15 +304,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
 
       await WorldInvitations.insertOne(invite);
-      await WorldActivity.insertOne({
-        _id: new ObjectId(),
-        worldId: worldObjectId,
-        actorUid: uid,
-        actorName: user.name || user.email || "User",
-        type: "member_invited",
-        meta: { email: inviteeEmail, role },
-        createdAt: now,
-      });
+      await logActivity(worldObjectId, uid, user, "member_invited", { email: inviteeEmail, role });
 
       res.status(200).json({ ok: true, inviteId: invite._id.toString() });
     });
@@ -391,15 +357,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             { $pull: { members: { uid: userId } }, $inc: { "stats.collaboratorCount": -1 }, $set: { updatedAt: now } }
           );
 
-          await WorldActivity.insertOne({
-            _id: new ObjectId(),
-            worldId: worldObjectId,
-            actorUid: uid,
-            actorName: user.name || user.email || "User",
-            type: "member_removed",
-            meta: { removedUid: userId },
-            createdAt: now,
-          });
+          await logActivity(worldObjectId, uid, user, "member_removed", { removedUid: userId });
 
           res.status(200).json({ ok: true });
           return;
@@ -422,15 +380,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { $set: { "members.$.role": role, updatedAt: now } }
         );
 
-        await WorldActivity.insertOne({
-          _id: new ObjectId(),
-          worldId: worldObjectId,
-          actorUid: uid,
-          actorName: user.name || user.email || "User",
-          type: "member_role_updated",
-          meta: { targetUid: userId, newRole: role },
-          createdAt: now,
-        });
+        await logActivity(worldObjectId, uid, user, "member_role_updated", { targetUid: userId, newRole: role });
 
         res.status(200).json({ ok: true });
       });

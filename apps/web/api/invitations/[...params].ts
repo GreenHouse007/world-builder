@@ -1,10 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { withAuth } from "../_lib/respond.js";
-import { ObjectId } from "../_lib/db.js";
+import { withAuth, parseRouteParams, parseObjectId } from "../_lib/respond.js";
+import { logActivity } from "../_lib/db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const rawParams = req.query.params;
-  const params = Array.isArray(rawParams) ? rawParams : rawParams ? [rawParams] : [];
+  const params = parseRouteParams(req.query.params);
   const [inviteId, action] = params;
 
   if (!inviteId) {
@@ -12,16 +11,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  let inviteObjectId: ObjectId;
-  try {
-    inviteObjectId = new ObjectId(inviteId);
-  } catch {
+  const inviteObjectId = parseObjectId(inviteId);
+  if (!inviteObjectId) {
     res.status(400).json({ error: "invalid inviteId" });
     return;
   }
 
   if (action === "accept") {
-    await withAuth(req, res, ["POST"], async (user, { Worlds, WorldInvitations, WorldActivity }) => {
+    await withAuth(req, res, ["POST"], async (user, { Worlds, WorldInvitations }) => {
       const uid = user.uid;
       const email = user.email;
 
@@ -49,15 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
       await WorldInvitations.updateOne({ _id: inviteObjectId }, { $set: { status: "accepted", respondedAt: now } });
-      await WorldActivity.insertOne({
-        _id: new ObjectId(),
-        worldId: invite.worldId,
-        actorUid: uid,
-        actorName: user.name || user.email || "User",
-        type: "member_joined",
-        meta: { role: invite.role },
-        createdAt: now,
-      });
+      await logActivity(invite.worldId, uid, user, "member_joined", { role: invite.role });
 
       res.status(200).json({ ok: true });
     });

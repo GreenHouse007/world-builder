@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 import { Outlet } from "@tanstack/react-router";
-import { Topbar } from "..//components/layout/Topbar";
-import { Sidebar } from "../components/layout/Sidebar";
-import { useAuth } from "../store/auth";
-import { useWorlds } from "../store/worlds";
-import { usePages } from "../store/pages";
-import { useTheme } from "../store/theme";
-import { AuthOverlay } from "../components/layout/AuthOverlay";
-import { BackendStatusBanner } from "../components/layout/BackendStatusBanner";
+import { Topbar } from "./Topbar";
+import { Sidebar } from "./Sidebar";
+import { useAuth } from "../../store/auth";
+import { useWorlds } from "../../store/worlds";
+import { usePages } from "../../store/pages";
+import { useTheme } from "../../store/theme";
+import { AuthOverlay } from "./AuthOverlay";
+import { BackendStatusBanner } from "./BackendStatusBanner";
 
 function LoadingScreen({ theme }: { theme: "light" | "dark" }) {
   return (
